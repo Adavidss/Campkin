@@ -39,8 +39,14 @@ const ASSETS = ${JSON.stringify(assets)}
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS.map((a) => new URL(a, self.registration.scope).href)))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then((c) =>
+      c.addAll(ASSETS.map((a) => {
+        const url = new URL(a, self.registration.scope).href
+        // Hashed assets are immutable; everything else (index.html, manifest,
+        // icons) must bypass the HTTP cache or a stale shell gets pinned.
+        return a.startsWith('assets/') ? url : new Request(url, { cache: 'reload' })
+      }))
+    ).then(() => self.skipWaiting())
   )
 })
 
