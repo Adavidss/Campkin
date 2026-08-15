@@ -8,7 +8,7 @@ import {
 import { RV_TYPES } from '../lib/geo.js'
 import Stamp from '../components/Stamp.jsx'
 import TripCard from '../components/TripCard.jsx'
-import { createBackupFile, readBackupFile } from '../lib/backup.js'
+import { saveBackupToDevice, readBackupFile } from '../lib/backup.js'
 import { NATIONAL_PARKS, PARK_BY_ID } from '../data/parks.js'
 import { CATEGORY_BY_ID } from '../data/model.js'
 import { stateName } from '../lib/states.js'
@@ -35,14 +35,27 @@ function MoreHome() {
     setBusy(true)
     try {
       const snapshot = await actions.snapshotForBackup()
-      const { count } = await createBackupFile(snapshot)
-      toast(`Backup saved — ${count} records tucked away`, { icon: 'download', duration: 4000 })
+      const { via, count } = await saveBackupToDevice(snapshot)
+      if (via === 'cancelled') {
+        toast('Backup cancelled')
+      } else {
+        actions.markBackedUp()
+        toast(
+          via === 'share'
+            ? `Backup ready — ${count} records. Choose Save to Files to keep it on your phone.`
+            : `Backup saved — ${count} records tucked away`,
+          { icon: 'download', duration: 5000 }
+        )
+      }
     } catch (err) {
       console.error(err)
       toast('The backup couldn’t be created.', { tone: 'danger' })
     }
     setBusy(false)
   }
+
+  const lastBackup = state.settings.lastBackupAt
+  const pending = state.settings.changesSinceBackup || 0
 
   async function onRestoreFile(e) {
     const file = e.target.files?.[0]
@@ -77,14 +90,19 @@ function MoreHome() {
           <div className="storage-note" style={{ marginBottom: 14 }}>
             <Icon name="info" size={16} />
             <span>
-              Campkin lives entirely on this device — nothing is sent anywhere. A backup file keeps
-              your trips, passport, and photos safe if this device is lost or its browser data is
-              cleared.
+              Campkin lives entirely on this device — nothing is sent anywhere. Saving a backup to
+              your phone’s Files (or iCloud Drive) keeps trips, passport and photos safe even if the
+              app or browser is reset.
             </span>
+          </div>
+          <div style={{ fontSize: 13, color: pending >= 5 ? 'var(--amber)' : 'var(--ink-faint)', marginBottom: 12, fontWeight: 600 }}>
+            {lastBackup
+              ? `Last backup ${fmtDate(lastBackup.slice(0, 10))}${pending > 0 ? ` · ${pending} ${pending === 1 ? 'change' : 'changes'} since` : ' · up to date'}`
+              : 'No backup saved yet'}
           </div>
           <div className="btn-row">
             <Button icon="download" full onClick={downloadBackup} disabled={busy}>
-              {busy ? 'Preparing…' : 'Download Backup'}
+              {busy ? 'Preparing…' : 'Save Backup'}
             </Button>
             <Button variant="soft" icon="upload" full onClick={() => fileRef.current?.click()}>
               Restore Backup

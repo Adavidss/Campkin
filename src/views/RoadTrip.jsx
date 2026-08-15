@@ -12,6 +12,9 @@ import { stateName } from '../lib/states.js'
 import { useMapDark } from '../lib/hooks.js'
 import { setExploreCenter } from './Campgrounds.jsx'
 import { cx } from '../lib/util.js'
+import { planRoadTrip, poiToPlaceFields } from '../lib/curate.js'
+import { poiTypeLabel } from '../lib/pois.js'
+import { weekendOf, parseISO, toISO } from '../lib/dates.js'
 
 const CORRIDOR_MI = 75
 
@@ -26,7 +29,9 @@ export default function RoadTrip() {
   const [discover, setDiscover] = useState(null) // {lat, lon, label}
   const [loading, setLoading] = useState(false)
   const [locating, setLocating] = useState(false)
+  const [auto, setAuto] = useState(null) // null | {progress:{i,total,label}} | {result:[…]}
   const rvMode = state.settings.rvMode
+  const rvLen = parseFloat(state.settings.rv?.lengthFt) || null
 
   async function useMyLocation() {
     setLocating(true)
@@ -77,6 +82,7 @@ export default function RoadTrip() {
           return { ...s, rec, reasons }
         })
       setPlan({ a, b, miles, driveTime: driveTimeEstimate(miles, { rv: rvMode }), stops })
+      setAuto(null)
       if (!stops.length) toast('No parks along this corridor — it’ll be a pure driving route.')
     } catch (err) {
       toast(err.message, { tone: 'danger', duration: 4500 })
@@ -111,37 +117,119 @@ export default function RoadTrip() {
   const totalWithStops = legs.reduce((sum, l) => sum + l.miles, 0)
   const longLeg = legs.find((l) => l.miles > 380)
 
+  // Waypoints in order: start → included parks → destination.
+  const waypoints = useMemo(() => {
+    if (!plan) return []
+    return [
+      { name: firstWord(plan.a.label), lat: plan.a.lat, lon: plan.a.lon, kind: 'start' },
+      ...included.map((s) => ({ name: s.park.name, lat: s.park.lat, lon: s.park.lon, kind: 'park', park: s.park })),
+      { name: firstWord(plan.b.label), lat: plan.b.lat, lon: plan.b.lon, kind: 'end' },
+    ]
+  }, [plan, included])
+
+  async function planItAll() {
+    // The start point is home — plan the parks and the destination.
+    const stops = waypoints.filter((w) => w.kind !== 'start')
+    setAuto({ progress: { i: 0, total: stops.length, label: stops[0]?.name } })
+    try {
+      const result = await planRoadTrip(stops, {
+        rvMode,
+        rvLen,
+        onProgress: (i, total, label) => setAuto((a) => (a?.result ? a : { progress: { i, total, label } })),
+      })
+      setAuto({ result })
+      toast('Every stop is planned — review, then create', { icon: 'sparkle', duration: 4200 })
+    } catch (err) {
+      console.error(err)
+      setAuto(null)
+      toast('The planner hit a snag — try again in a moment.', { tone: 'danger' })
+    }
+  }
+
   function createTrip() {
     const name = `${firstWord(plan.a.label)} to ${firstWord(plan.b.label)} Road Trip`
-    const trip = actions.createTrip({ name, destination: plan.b.label, startDate: '', endDate: '' })
+    const totalMiles = totalWithStops || plan.miles
+    // Day count: one travel day per leg, plus a night at each park stop.
+    const dayCount = Math.max(2, legs.length + included.length)
+    const { start } = weekendOf(0)
+    const s = parseISO(start)
+    const e = new Date(s)
+    e.setDate(s.getDate() + dayCount - 1)
+    const trip = actions.createTrip({
+      name,
+      destination: plan.b.label,
+      startDate: toISO(s),
+      endDate: toISO(e),
+    })
     actions.updateTrip(trip.id, {
       route: {
         from: plan.a.label,
         to: plan.b.label,
-        miles: String(totalWithStops || plan.miles),
-        driveTime: driveTimeEstimate(totalWithStops || plan.miles, { rv: rvMode }),
-        notes: included.length
-          ? `Stops: ${included.map((s) => s.park.name).join(' → ')}`
-          : '',
+        miles: String(totalMiles),
+        driveTime: driveTimeEstimate(totalMiles, { rv: rvMode }),
+        notes: included.length ? `Stops: ${included.map((st) => st.park.name).join(' → ')}` : '',
         fromCoord: { lat: plan.a.lat, lon: plan.a.lon, label: plan.a.label },
         toCoord: { lat: plan.b.lat, lon: plan.b.lon, label: plan.b.label },
       },
     })
-    for (const s of included) {
-      actions.addPlace({
-        name: s.park.name,
-        category: 'national-park',
-        state: s.park.states[0],
-        visited: false,
-        tripId: trip.id,
-        notes: 'Road trip stop',
-      })
+
+    const planned = auto?.result || null
+    // Each stop gets its own day: parks first, destination last.
+    let day = 1
+    let firstCamp = null
+    for (const wp of waypoints.filter((w) => w.kind !== 'start')) {
+      day = Math.min(day, dayCount)
+      const p = planned?.find((r) => r.stop.name === wp.name)
+      if (wp.kind === 'park') {
+        actions.addPlace({
+          name: wp.park.name,
+          category: 'national-park',
+          state: wp.park.states[0],
+          visited: false,
+          tripId: trip.id,
+          day,
+          notes: 'Road trip stop',
+          lat: wp.lat,
+          lon: wp.lon,
+        })
+      }
+      if (p) {
+        for (const sg of p.sights) actions.addPlace(poiToPlaceFields(sg, trip.id, day))
+        for (const f of p.food) actions.addPlace(poiToPlaceFields(f, trip.id, day))
+        if (p.camp) {
+          const cg = actions.saveCampgroundFromMap(p.camp)
+          actions.addPlace({
+            name: `Overnight: ${cg.name}`,
+            category: 'campground',
+            visited: false,
+            tripId: trip.id,
+            day,
+            notes: p.camp.kind === 'rv-park' ? 'RV park' : 'Campground',
+            lat: cg.lat,
+            lon: cg.lon,
+          })
+          if (wp.kind === 'end') firstCamp = cg
+          else if (!firstCamp) firstCamp = firstCamp || null
+        }
+      }
+      day++
     }
+    // The destination's campground is the trip's home base.
+    if (planned) {
+      const endPlan = planned.find((r) => r.stop.kind === 'end')
+      if (endPlan?.camp) {
+        const cg = actions.saveCampgroundFromMap(endPlan.camp)
+        actions.updateTrip(trip.id, { campgroundId: cg.id })
+      }
+    }
+
     toast(
-      included.length
-        ? `Road trip created — ${included.length} ${included.length === 1 ? 'stop' : 'stops'} on the list`
-        : 'Road trip created',
-      { icon: 'route', duration: 4000 }
+      planned
+        ? 'Road trip fully planned — every stop has its day'
+        : included.length
+          ? `Road trip created — ${included.length} ${included.length === 1 ? 'stop' : 'stops'} on the list`
+          : 'Road trip created',
+      { icon: 'route', duration: 4200 }
     )
     navigate(`trip/${trip.id}`, { replace: true })
   }
@@ -281,11 +369,80 @@ export default function RoadTrip() {
             onDiscover={() => setDiscover({ lat: plan.b.lat, lon: plan.b.lon, label: firstWord(plan.b.label) })}
           />
 
-          <Button full icon="route" onClick={createTrip} style={{ marginTop: 16 }}>
-            Create This Road Trip
+          {/* ---- auto-plan ---- */}
+          {!auto && (
+            <div className="autoplan-cta">
+              <div>
+                <div style={{ fontWeight: 680 }}>Plan it all for me</div>
+                <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginTop: 2 }}>
+                  A campground, a few sights and somewhere to eat at every stop — laid out day by day.
+                </div>
+              </div>
+              <Button small icon="sparkle" onClick={planItAll}>
+                Plan it all
+              </Button>
+            </div>
+          )}
+          {auto?.progress && (
+            <div className="autoplan-cta">
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 680 }}>
+                  Planning stop {Math.min(auto.progress.i + 1, auto.progress.total)} of {auto.progress.total}
+                  {auto.progress.label ? ` — ${auto.progress.label}` : ''}
+                </div>
+                <div className="progress" style={{ marginTop: 8 }}>
+                  <div className="progress-fill" style={{ width: `${(auto.progress.i / Math.max(1, auto.progress.total)) * 100}%` }} />
+                </div>
+              </div>
+            </div>
+          )}
+          {auto?.result && (
+            <div style={{ marginTop: 14 }}>
+              <div className="section-title" style={{ fontSize: 18, marginBottom: 8 }}>Your plan, day by day</div>
+              {auto.result.map((r, i) => (
+                <div key={r.stop.name} className="pick-card" style={{ padding: '12px 14px' }}>
+                  <div className="pick-head">
+                    <span className="pick-rank">{i + 1}</span>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <div className="pick-name" style={{ fontSize: 16.5 }}>{r.stop.name}</div>
+                      <div className="pick-sub">Day {i + 1}</div>
+                    </div>
+                  </div>
+                  <ul className="pick-reasons" style={{ marginTop: 8 }}>
+                    <li className="pick-reason tone-good">
+                      <Icon name="tent" size={12} />
+                      {r.camp ? `Stay: ${r.camp.name}` : rvMode ? 'No RV campground mapped nearby' : 'No campground mapped nearby'}
+                    </li>
+                    {r.sights.map((s) => (
+                      <li key={s.id} className="pick-reason tone-info">
+                        <Icon name="camera" size={12} />
+                        {s.name} <span style={{ opacity: 0.7 }}>· {poiTypeLabel(s)}</span>
+                      </li>
+                    ))}
+                    {r.food.map((f) => (
+                      <li key={f.id} className="pick-reason tone-info">
+                        <Icon name="food" size={12} />
+                        {f.name} <span style={{ opacity: 0.7 }}>· {poiTypeLabel(f)}</span>
+                      </li>
+                    ))}
+                    {r.sights.length === 0 && r.food.length === 0 && (
+                      <li className="pick-reason tone-warn">
+                        <Icon name="info" size={12} /> Sparse map data here — add your own finds later
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <Button full icon="route" onClick={createTrip} style={{ marginTop: 16 }} disabled={!!auto?.progress}>
+            {auto?.result ? 'Create the Full Itinerary' : 'Create This Road Trip'}
           </Button>
           <p className="field-hint" style={{ textAlign: 'center', marginTop: 8 }}>
-            The route lands on the trip page; the stops become its Things to Do list.
+            {auto?.result
+              ? 'Every stop, sight and meal lands on its own day — rearrange anything on the trip page.'
+              : 'The route lands on the trip page; the stops become your itinerary.'}
           </p>
         </>
       )}

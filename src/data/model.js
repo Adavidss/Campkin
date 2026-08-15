@@ -106,6 +106,10 @@ export function newPlace(fields) {
     visited: true, // false = saved for later ("things to do" not yet done)
     source: 'manual', // 'manual' | 'park' | 'campground'
     refId: null, // parkId or campgroundId when derived
+    day: null, // itinerary day (1-based) within its trip, null = unscheduled
+    order: 0, // ordering within a day
+    lat: null,
+    lon: null,
     sample: false,
     createdAt: new Date().toISOString(),
     ...fields,
@@ -135,6 +139,8 @@ export function defaultSettings() {
     mapDark: null, // null = follow app theme; true/false = explicit map style
     rvMode: true, // Campkin is RV-first; turn off for tent trips
     rv: { type: 'travel-trailer', lengthFt: '', heightFt: '' },
+    lastBackupAt: null, // ISO timestamp of the last backup the user saved
+    changesSinceBackup: 0, // meaningful edits since then (drives the reminder)
   }
 }
 

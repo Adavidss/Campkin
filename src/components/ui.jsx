@@ -30,7 +30,7 @@ export function Button({
   )
 }
 
-export function IconBtn({ name, label, active, filled, className, size = 20, ...rest }) {
+export function IconBtn({ name, label, active, filled, className, size = 20, style, ...rest }) {
   return (
     <button
       type="button"
@@ -40,7 +40,7 @@ export function IconBtn({ name, label, active, filled, className, size = 20, ...
       aria-pressed={active != null ? active : undefined}
       {...rest}
     >
-      <Icon name={name} size={size} filled={filled ?? active} />
+      <Icon name={name} size={size} filled={filled ?? active} style={style} />
     </button>
   )
 }

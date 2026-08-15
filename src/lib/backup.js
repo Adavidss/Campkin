@@ -7,7 +7,7 @@ import { blobToDataURL, dataURLToBlob } from './images.js'
 import { download } from './util.js'
 import { todayISO } from './dates.js'
 
-export async function createBackupFile({ state, photoRows }) {
+export async function buildBackupBlob({ state, photoRows }) {
   const photos = []
   for (const row of photoRows) {
     const { blob, ...meta } = row
@@ -28,8 +28,52 @@ export async function createBackupFile({ state, photoRows }) {
     photos,
   }
   const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' })
-  download(`campkin-backup-${todayISO()}.json`, blob)
-  return { count: countRecords(payload), size: blob.size }
+  return { blob, count: countRecords(payload), filename: `campkin-backup-${todayISO()}.json` }
+}
+
+// Get the backup onto the device's real file system, not just the browser:
+//  • iPhone/iPad (and Android): the share sheet → "Save to Files" / Drive
+//  • Desktop Chrome/Edge: a native Save dialog (File System Access API)
+//  • Everything else: a regular download
+// Returns how it was delivered so the UI can phrase the confirmation.
+export async function saveBackupToDevice({ state, photoRows }) {
+  const { blob, count, filename } = await buildBackupBlob({ state, photoRows })
+  const file = new File([blob], filename, { type: 'application/json' })
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Campkin backup' })
+      return { via: 'share', count, size: blob.size }
+    } catch (err) {
+      if (err.name === 'AbortError') return { via: 'cancelled', count, size: blob.size }
+      // fall through to other methods
+    }
+  }
+
+  if (window.showSaveFilePicker) {
+    try {
+      const handle = await window.showSaveFilePicker({
+        suggestedName: filename,
+        types: [{ description: 'Campkin backup', accept: { 'application/json': ['.json'] } }],
+      })
+      const w = await handle.createWritable()
+      await w.write(blob)
+      await w.close()
+      return { via: 'picker', count, size: blob.size }
+    } catch (err) {
+      if (err.name === 'AbortError') return { via: 'cancelled', count, size: blob.size }
+    }
+  }
+
+  download(filename, blob)
+  return { via: 'download', count, size: blob.size }
+}
+
+// Kept for callers that just want a download.
+export async function createBackupFile(snapshot) {
+  const { blob, count, filename } = await buildBackupBlob(snapshot)
+  download(filename, blob)
+  return { count, size: blob.size }
 }
 
 function countRecords(payload) {

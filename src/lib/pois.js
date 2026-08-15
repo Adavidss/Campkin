@@ -62,7 +62,7 @@ function parsePOI(el, kind) {
   if (lat == null || !t.name) return null
   return {
     id: `${el.type}/${el.id}`,
-    name: t.name,
+    name: t.name.split(';')[0].trim(), // OSM joins alt names with ";"
     lat,
     lon,
     kind,

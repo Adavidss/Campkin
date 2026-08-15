@@ -300,6 +300,11 @@ function CuratedTripSheet({ dest, origin, onClose }) {
         },
       })
     }
+    // Lay it out day by day: the park on day 1, then sights and meals spread
+    // across the stay so no day is empty and no day is all restaurants.
+    const nights = p?.nights || 2
+    const days = nights + 1
+    let d = 1
     if (dest.parkId) {
       actions.addPlace({
         name: dest.name,
@@ -307,7 +312,10 @@ function CuratedTripSheet({ dest, origin, onClose }) {
         state: dest.state,
         visited: false,
         tripId: trip.id,
+        day: 1,
         notes: 'The main event',
+        lat: dest.lat,
+        lon: dest.lon,
       })
     }
     for (const s of p?.sightPicks || []) {
@@ -316,16 +324,23 @@ function CuratedTripSheet({ dest, origin, onClose }) {
         category: s.tourism === 'museum' || s.historic ? 'historic-site' : 'landmark',
         visited: false,
         tripId: trip.id,
+        day: ((d++ - 1) % days) + 1,
         notes: poiTypeLabel(s),
+        lat: s.lat,
+        lon: s.lon,
       })
     }
+    let fd = 1
     for (const f of p?.foodPicks || []) {
       actions.addPlace({
         name: f.name,
         category: 'food',
         visited: false,
         tripId: trip.id,
+        day: ((fd++ - 1) % days) + 1,
         notes: poiTypeLabel(f),
+        lat: f.lat,
+        lon: f.lon,
       })
     }
     toast('Your trip is ready — dates set for this weekend', { icon: 'route', duration: 4200 })

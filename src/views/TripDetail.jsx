@@ -11,6 +11,7 @@ import PlaceSheet from '../components/PlaceSheet.jsx'
 import Stamp from '../components/Stamp.jsx'
 import TripWeather from '../components/TripWeather.jsx'
 import DiscoverSheet from '../components/DiscoverSheet.jsx'
+import Itinerary from '../components/Itinerary.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -189,31 +190,29 @@ export default function TripDetail({ tripId }) {
           </Section>
 
           <Section
-            title="Things to Do"
+            title="Itinerary"
             action={
               <div style={{ display: 'flex', gap: 2 }}>
                 <Button variant="ghost" small icon="sparkle" onClick={openDiscover} disabled={discovering}>
                   {discovering ? 'Finding…' : 'Discover'}
                 </Button>
-                {places.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    small
-                    icon="plus"
-                    onClick={() => {
-                      setEditingPlace(null)
-                      setPlaceOpen(true)
-                    }}
-                  >
-                    Add
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  small
+                  icon="plus"
+                  onClick={() => {
+                    setEditingPlace(null)
+                    setPlaceOpen(true)
+                  }}
+                >
+                  Add
+                </Button>
               </div>
             }
           >
-            <PlacesList
+            <Itinerary
+              trip={trip}
               places={places}
-              status={status}
               onAdd={() => {
                 setEditingPlace(null)
                 setPlaceOpen(true)
@@ -568,73 +567,6 @@ function ChecklistSummary({ trip, active }) {
             : 'Packing lists plus before-leaving checks for home and campground.'}
       </p>
     </Card>
-  )
-}
-
-function PlacesList({ places, status, onAdd, onDiscover, onEdit }) {
-  const { actions } = useApp()
-  if (!places.length) {
-    return (
-      <EmptyState
-        compact
-        icon="pin"
-        title="Nothing saved yet"
-        text="Collect restaurants, trails, and stops — anything worth remembering."
-      >
-        <Button variant="soft" small icon="sparkle" onClick={onDiscover}>
-          Discover Nearby
-        </Button>
-        <Button variant="ghost" small icon="plus" onClick={onAdd}>
-          Add a Place
-        </Button>
-      </EmptyState>
-    )
-  }
-  const sorted = [...places].sort((a, b) => Number(a.visited) - Number(b.visited))
-  return (
-    <div>
-      {sorted.map((p) => {
-        const cat = CATEGORY_BY_ID[p.category] || CATEGORY_BY_ID.other
-        return (
-          <ListRow
-            key={p.id}
-            icon={cat.icon}
-            title={p.name}
-            sub={[cat.label, p.state, p.notes].filter(Boolean).join(' · ')}
-            onClick={() => onEdit(p)}
-            right={
-              <>
-                {!p.visited && (
-                  <Button
-                    variant="soft"
-                    small
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      actions.updatePlace(p.id, { visited: true, dateVisited: todayISO() })
-                    }}
-                  >
-                    Been here
-                  </Button>
-                )}
-                {p.visited && <Icon name="check" size={16} style={{ color: 'var(--sage)' }} />}
-                {p.favorite && <Icon name="heart" size={15} filled style={{ color: 'var(--clay)' }} />}
-                <a
-                  href={appleMapsSearch(`${p.name}${p.state ? ', ' + p.state : ''}`)}
-                  target="_blank"
-                  rel="noopener"
-                  aria-label={`Open ${p.name} in Maps`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="icon-btn"
-                  style={{ width: 34, height: 34 }}
-                >
-                  <Icon name="external" size={16} />
-                </a>
-              </>
-            }
-          />
-        )
-      })}
-    </div>
   )
 }
 

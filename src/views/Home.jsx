@@ -4,10 +4,11 @@ import { navigate, Link } from '../lib/router.jsx'
 import { fmtRange, countdownLabel, daysUntil, fmtDate } from '../lib/dates.js'
 import { appleMapsDirections, telHref } from '../lib/maps.js'
 import Icon, { Logo } from '../components/Icon.jsx'
-import { Button, Section, Stars } from '../components/ui.jsx'
+import { Button, Section, Stars, useToast } from '../components/ui.jsx'
 import Stamp from '../components/Stamp.jsx'
 import { usePhotoUrl } from '../lib/hooks.js'
 import { plural } from '../lib/util.js'
+import { saveBackupToDevice } from '../lib/backup.js'
 
 export default function Home() {
   const { state, actions } = useApp()
@@ -35,6 +36,8 @@ export default function Home() {
       </div>
 
       {hero && <HeroCard trip={hero} kind={heroKind} />}
+
+      <BackupNudge />
 
       <div className="quick-actions">
         <QuickAction icon="pin" label="Quick Trip" to="trips/quick" />
@@ -68,6 +71,50 @@ export default function Home() {
 
       {past.length > 0 && <TakeMeBack past={past} />}
     </>
+  )
+}
+
+// A quiet reminder once enough has changed since the last saved backup —
+// the whole app lives on-device, so this is the safety net.
+function BackupNudge() {
+  const { state, actions } = useApp()
+  const toast = useToast()
+  const [busy, setBusy] = React.useState(false)
+  const pending = state.settings.changesSinceBackup || 0
+  const last = state.settings.lastBackupAt
+  const daysSince = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null
+  const due = pending >= 8 || (pending > 0 && (daysSince == null || daysSince >= 14))
+  if (!due) return null
+
+  async function save() {
+    setBusy(true)
+    try {
+      const { via } = await saveBackupToDevice(await actions.snapshotForBackup())
+      if (via !== 'cancelled') {
+        actions.markBackedUp()
+        toast(via === 'share' ? 'Choose Save to Files to keep it on your phone' : 'Backup saved', {
+          icon: 'check',
+          duration: 4500,
+        })
+      }
+    } catch (err) {
+      toast('The backup couldn’t be created.', { tone: 'danger' })
+    }
+    setBusy(false)
+  }
+
+  return (
+    <div className="backup-nudge">
+      <Icon name="download" size={17} />
+      <span style={{ flex: 1 }}>
+        {last
+          ? `${pending} ${pending === 1 ? 'change' : 'changes'} since your last backup — save a copy to your phone.`
+          : 'Your trips live only on this device. Save a backup to your phone’s Files.'}
+      </span>
+      <Button small onClick={save} disabled={busy}>
+        {busy ? 'Saving…' : 'Save'}
+      </Button>
+    </div>
   )
 }
 

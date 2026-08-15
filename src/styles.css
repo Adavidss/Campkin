@@ -2169,6 +2169,180 @@ form + .ideas-row,
   margin-top: 14px;
 }
 
+.autoplan-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 11%, var(--surface)), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 35%, var(--line));
+}
+
+/* itinerary */
+.itin-day {
+  margin-bottom: 14px;
+}
+
+.itin-day-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2px 6px;
+}
+
+.itin-day-title {
+  font-family: var(--font-display);
+  font-size: 16.5px;
+  font-weight: 650;
+}
+
+.is-ideas .itin-day-title {
+  color: var(--ink-faint);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.itin-day-count {
+  font-size: 12px;
+  color: var(--ink-faint);
+  font-weight: 700;
+}
+
+.itin-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+}
+
+.itin-row + .itin-row {
+  margin-top: 6px;
+}
+
+.itin-check {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  border: 1.8px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  flex-shrink: 0;
+  transition: all 0.16s ease;
+}
+
+.itin-row.is-done .itin-check {
+  background: var(--sage);
+  border-color: var(--sage);
+  color: #fff;
+}
+
+.itin-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+
+.itin-icon {
+  display: flex;
+  color: var(--pine);
+  flex-shrink: 0;
+}
+
+.itin-name {
+  display: block;
+  font-weight: 620;
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itin-row.is-done .itin-name {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+}
+
+.itin-sub {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itin-actions {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.itin-mini {
+  width: 26px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.itin-mini svg {
+  width: 15px;
+  height: 15px;
+}
+
+.itin-mini:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.itin-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  color: var(--ink-faint);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.itin-empty:hover {
+  border-color: var(--sage);
+  color: var(--sage);
+}
+
+.backup-nudge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--sand) 28%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--sand-deep) 40%, var(--line));
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
+.backup-nudge > svg {
+  color: var(--sand-deep);
+  flex-shrink: 0;
+}
+
 /* quick trip curated sheet */
 .curated-block {
   margin-top: 16px;

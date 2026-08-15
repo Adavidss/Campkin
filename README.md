@@ -51,13 +51,23 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
   campground near the destination.
 - **Road Trip planner** — give it A→B and it maps the corridor, recommends
   the National Parks worth stopping for (skip any), totals miles and days at
-  RV pace, flags legs that need an overnight, and creates the whole trip with
-  the stops as your to-do list.
+  RV pace, flags legs that need an overnight — and **Plan it all** fills in a
+  campground, sights and meals at every stop, laid out day by day, then
+  creates the whole itinerary in one tap.
+- **Itinerary** — every trip has a day-by-day plan: sights, food and stops
+  slotted into days, reorderable, movable between days, checkable as you go;
+  Discover adds new finds, Auto-plan spreads unscheduled ideas across the days.
+- **Trip organizer** — search across name, destination, campground, state
+  and year; filter Upcoming / Past / Favorites / 4★+; sort; past trips group
+  by year once your book grows.
 - **Sights & Food** — keyless discovery around any stop or campground:
   landmarks, viewpoints, waterfalls, museums, cafés and restaurants, ranked
   with visible reasons (Wikipedia-notable spots surface first) and addable to
   a trip's Things to Do in one tap.
-- **Backup & restore** — one file with everything, including photos.
+- **Backup & restore** — one file with everything, including photos, saved
+  to your phone's Files / iCloud Drive via the share sheet (native Save
+  dialog on desktop). Campkin tracks changes since the last backup and nudges
+  you on Home when it's time.
 - **Installable PWA** — works offline at the campground.
 
 ## Development

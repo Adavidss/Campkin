@@ -64,6 +64,8 @@ export default function DiscoverSheet({ open, onClose, center, tripId }) {
       notes: poiTypeLabel(p),
       visited: false,
       tripId,
+      lat: p.lat,
+      lon: p.lon,
     })
     setAdded((s) => new Set(s).add(p.id))
     toast('Added to Things to Do', { icon: 'check' })

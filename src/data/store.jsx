@@ -24,6 +24,22 @@ function persistPut(store, value) {
   dbPut(store, value).catch(reportDbError)
 }
 
+// Count meaningful edits so the app can nudge for a backup — batched so a
+// burst of writes (a whole curated trip) counts once.
+let changeTick = null
+function noteChange(stateRef, setState) {
+  if (changeTick) return
+  changeTick = setTimeout(() => {
+    changeTick = null
+    const s = stateRef.current
+    if (!s?.settings) return
+    const settings = { ...s.settings, changesSinceBackup: (s.settings.changesSinceBackup || 0) + 1 }
+    stateRef.current = { ...s, settings }
+    setState(stateRef.current)
+    dbPut('settings', settings).catch(reportDbError)
+  }, 1500)
+}
+
 export function AppProvider({ children }) {
   const [state, setState] = useState(null)
   const stateRef = useRef(null)
@@ -84,6 +100,7 @@ function makeActions(stateRef, setState) {
   function patchState(patch) {
     stateRef.current = { ...stateRef.current, ...patch }
     setState(stateRef.current)
+    if (!('settings' in patch)) noteChange(stateRef, setState)
   }
 
   function replaceIn(list, updated) {
@@ -447,6 +464,37 @@ function makeActions(stateRef, setState) {
       return next
     },
 
+    // --- itinerary -------------------------------------------------------------
+
+    // Move a place to a day (null = unscheduled) at the end of that day.
+    setPlaceDay(id, day) {
+      const s = get()
+      const place = s.places.find((p) => p.id === id)
+      if (!place) return
+      const siblings = s.places.filter((p) => p.tripId === place.tripId && p.day === day && p.id !== id)
+      const order = siblings.length ? Math.max(...siblings.map((p) => p.order || 0)) + 1 : 0
+      api.updatePlace(id, { day, order })
+    },
+
+    // Nudge a place up/down within its day.
+    movePlace(id, dir) {
+      const s = get()
+      const place = s.places.find((p) => p.id === id)
+      if (!place) return
+      const list = s.places
+        .filter((p) => p.tripId === place.tripId && p.day === place.day)
+        .sort((a, b) => (a.order || 0) - (b.order || 0) || (a.createdAt < b.createdAt ? -1 : 1))
+      const i = list.findIndex((p) => p.id === id)
+      const j = i + dir
+      if (i < 0 || j < 0 || j >= list.length) return
+      const reordered = [...list]
+      ;[reordered[i], reordered[j]] = [reordered[j], reordered[i]]
+      const updated = reordered.map((p, idx) => ({ ...p, order: idx }))
+      const byId = Object.fromEntries(updated.map((p) => [p.id, p]))
+      patchState({ places: s.places.map((p) => byId[p.id] || p) })
+      dbBulkPut('places', updated).catch(reportDbError)
+    },
+
     deletePlace(id) {
       const s = get()
       const place = s.places.find((p) => p.id === id)
@@ -564,6 +612,10 @@ function makeActions(stateRef, setState) {
       const settings = { ...s.settings, ...patch }
       patchState({ settings })
       persistPut('settings', settings)
+    },
+
+    markBackedUp() {
+      api.updateSettings({ lastBackupAt: new Date().toISOString(), changesSinceBackup: 0 })
     },
 
     // --- sample data ----------------------------------------------------------------

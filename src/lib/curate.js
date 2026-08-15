@@ -3,10 +3,30 @@
 // weather and the drive — from keyless sources, each part failing softly.
 
 import { fetchNearbyCampgrounds } from './osm.js'
-import { fetchPOIs, topPOIs } from './pois.js'
+import { fetchPOIs, topPOIs, poiTypeLabel } from './pois.js'
 import { fetchForecast } from './weather.js'
 import { topPicks } from './recommend.js'
 import { haversineMiles, roadMilesEstimate, driveTimeEstimate } from './geo.js'
+
+// Turn a POI into place-record fields for a trip's itinerary.
+export function poiToPlaceFields(p, tripId, day) {
+  const category =
+    p.kind === 'food'
+      ? 'food'
+      : p.tourism === 'museum' || p.historic
+        ? 'historic-site'
+        : 'landmark'
+  return {
+    name: p.name,
+    category,
+    visited: false,
+    tripId,
+    day,
+    notes: poiTypeLabel(p),
+    lat: p.lat,
+    lon: p.lon,
+  }
+}
 
 async function soft(promise, fallback) {
   try {
@@ -55,4 +75,33 @@ export async function curateTrip(dest, origin, { rvMode = true, rvLen = null, si
     nights,
     partial: !camps || !sights || !food,
   }
+}
+
+// Plan every stop of a road trip: for each waypoint, a campground + a few
+// sights + a couple of places to eat. Runs strictly one stop at a time (and
+// one Overpass call at a time inside) so the map service doesn't throttle us.
+// `onProgress(i, total, label)` drives the UI.
+export async function planRoadTrip(stops, { rvMode = true, rvLen = null, signal, onProgress } = {}) {
+  const out = []
+  for (let i = 0; i < stops.length; i++) {
+    const s = stops[i]
+    onProgress?.(i, stops.length, s.name)
+    const camps = await soft(fetchNearbyCampgrounds(s.lat, s.lon, 25, { signal }), null)
+    const sights = await soft(fetchPOIs('sights', s.lat, s.lon, 15, { signal }), null)
+    const food = await soft(fetchPOIs('food', s.lat, s.lon, 12, { signal }), null)
+    out.push({
+      stop: s,
+      camp: camps
+        ? topPicks(
+            camps.map((r) => ({ ...r, distance: haversineMiles(s, r) })),
+            { rvLen, rvMode },
+            1
+          )[0] || null
+        : null,
+      sights: sights ? topPOIs(sights, s, 3) : [],
+      food: food ? topPOIs(food, s, 2) : [],
+    })
+  }
+  onProgress?.(stops.length, stops.length, null)
+  return out
 }
