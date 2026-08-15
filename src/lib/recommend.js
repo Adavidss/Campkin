@@ -10,7 +10,13 @@ function reason(text, tone = 'good') {
   return { text, tone }
 }
 
+// OSM sometimes has individual pitches mapped as their own "campground"
+// ("Site 19", "Pitch 4"). Fine on the map, but never a recommendation.
+const PITCH_NAME = /^(site|pitch|spot|space|lot)\s*#?\d+[a-z]?$/i
+
 export function scoreCampground(r, { rvLen = null, rvMode = true } = {}) {
+  if (PITCH_NAME.test((r.name || '').trim())) return null
+
   let score = 0
   const reasons = []
 
