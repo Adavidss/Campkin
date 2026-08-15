@@ -14,6 +14,7 @@ import DiscoverSheet from '../components/DiscoverSheet.jsx'
 import Itinerary from '../components/Itinerary.jsx'
 import BookingSheet from '../components/BookingSheet.jsx'
 import TripMap from '../components/TripMap.jsx'
+import ShareSheet from '../components/ShareSheet.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -37,6 +38,7 @@ export default function TripDetail({ tripId }) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [discoverCenter, setDiscoverCenter] = useState(null)
   const [discovering, setDiscovering] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
   const notesRef = useRef(null)
   const photosRef = useRef(null)
   const rememberRef = useRef(null)
@@ -92,6 +94,7 @@ export default function TripDetail({ tripId }) {
         <div className="detail-title-row">
           <h1 className="detail-title">{trip.name}</h1>
           <div className="detail-actions">
+            <IconBtn name="share" label="Share trip" onClick={() => setShareOpen(true)} />
             <IconBtn
               name="heart"
               label={trip.favorite ? 'Remove from favorites' : 'Add to favorites'}
@@ -285,6 +288,15 @@ export default function TripDetail({ tripId }) {
           }}
         />
         <ListRow
+          icon="share"
+          title="Share trip"
+          sub="Send the plan as a message or a link"
+          onClick={() => {
+            setMenuOpen(false)
+            setShareOpen(true)
+          }}
+        />
+        <ListRow
           icon="refresh"
           title="Duplicate trip"
           sub="Same destination and checklist, fresh dates"
@@ -334,6 +346,7 @@ export default function TripDetail({ tripId }) {
         center={discoverCenter}
         tripId={trip.id}
       />
+      <ShareSheet open={shareOpen} onClose={() => setShareOpen(false)} trip={trip} cg={cg} places={places} />
 
       <ConfirmSheet
         open={confirmDelete}

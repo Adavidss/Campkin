@@ -6,6 +6,7 @@ import { topPOIs, poiIcon, poiTypeLabel } from '../lib/pois.js'
 import { fetchArea } from '../lib/area.js'
 import { appleMapsSearch } from '../lib/maps.js'
 import { todayISO } from '../lib/dates.js'
+import WikiCard from './WikiCard.jsx'
 
 // "Sights & Food" — POI recommendations around a point, reused by trips and
 // road-trip stops. With a tripId, picks can be added straight to the trip's
@@ -125,6 +126,9 @@ export default function DiscoverSheet({ open, onClose, center, tripId }) {
                   </li>
                 ))}
               </ul>
+              {(p.wikipedia || p.wiki || p.kind !== 'food') && (
+                <WikiCard hint={{ name: p.name, wikipedia: p.wikipedia, kind: poiTypeLabel(p) }} />
+              )}
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 9 }}>
                 {tripId && (
                   <Button

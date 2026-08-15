@@ -6,6 +6,7 @@ import { Button, Card, EmptyState, Field, useToast } from '../components/ui.jsx'
 import MapView from '../components/MapView.jsx'
 import DiscoverSheet from '../components/DiscoverSheet.jsx'
 import BookingSheet from '../components/BookingSheet.jsx'
+import { WikiThumb } from '../components/WikiCard.jsx'
 import { geocodePlace, currentPosition, reverseGeocode } from '../lib/osm.js'
 import { corridorInfo, roadMilesEstimate, driveTimeEstimate, formatMiles } from '../lib/geo.js'
 import { NATIONAL_PARKS } from '../data/parks.js'
@@ -525,6 +526,7 @@ function StopRow({ kind, title, sub, motif, reasons, off, onToggle, onCampground
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {kind === 'stop' && !off && <WikiThumb hint={{ name: `${title} National Park`, kind: 'National Park' }} size={44} />}
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="stop-title">{title}</div>
             <div className="stop-sub">{sub}</div>

@@ -8,6 +8,7 @@ import {
 import Stamp from '../components/Stamp.jsx'
 import PlaceSheet from '../components/PlaceSheet.jsx'
 import USMap from '../components/USMap.jsx'
+import WikiCard from '../components/WikiCard.jsx'
 import { NATIONAL_PARKS, PARK_BY_ID } from '../data/parks.js'
 import { CATEGORY_BY_ID, PLACE_CATEGORIES } from '../data/model.js'
 import { STATES, stateName } from '../lib/states.js'
@@ -336,6 +337,7 @@ function ParkSheet({ parkId, onClose }) {
             National Park · {park.states.map((ab) => stateName(ab)).join(', ')}
           </div>
         </div>
+        <WikiCard variant="hero" hint={{ name: `${park.name} National Park`, kind: 'National Park' }} />
 
         {visited ? (
           <>

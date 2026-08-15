@@ -3,6 +3,7 @@ import Icon from './Icon.jsx'
 import { Button, IconBtn, Sheet, ConfirmSheet, Field, Chips, useToast } from './ui.jsx'
 import MapView, { DAY_COLORS } from './MapView.jsx'
 import BookingSheet from './BookingSheet.jsx'
+import WikiCard from './WikiCard.jsx'
 import { useApp } from '../data/store.jsx'
 import { useMapDark } from '../lib/hooks.js'
 import { CATEGORY_BY_ID, PLACE_CATEGORIES } from '../data/model.js'
@@ -142,6 +143,7 @@ export default function TripMap({ trip, cg, places, onEditPlace }) {
             eyebrow={rvMode ? 'Home base · RV' : 'Home base'}
             title={cg.name}
             sub={[cg.location, trip.siteNumber && `Site ${trip.siteNumber}`, cg.hookups].filter(Boolean).join(' · ')}
+            children={<WikiCard hint={{ name: cg.name, state: cg.location, kind: 'campground' }} />}
             actions={
               <>
                 <Button small icon="calendar" onClick={() => setBookingCg(cg)}>Book</Button>
@@ -251,6 +253,15 @@ function PlacePin({ trip, place, days, legs, onEdit, onRemove, onClose }) {
         <p style={{ fontSize: 13, color: 'var(--ink-faint)', marginTop: 2 }}>
           {legMiles} mi from {leg.from.name || leg.from.label || 'previous stop'} · about {driveTimeEstimate(legMiles)}
         </p>
+      )}
+      {place.category !== 'food' && (
+        <WikiCard
+          hint={{
+            name: place.category === 'national-park' ? `${place.name} National Park` : place.name,
+            state: place.state,
+            kind: cat.label,
+          }}
+        />
       )}
       <textarea
         className="textarea"

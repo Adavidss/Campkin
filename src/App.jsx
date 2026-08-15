@@ -12,6 +12,7 @@ import TripComplete from './views/TripComplete.jsx'
 import TripIdeas from './views/TripIdeas.jsx'
 import RoadTrip from './views/RoadTrip.jsx'
 import QuickTrip from './views/QuickTrip.jsx'
+import SharedTrip from './views/SharedTrip.jsx'
 import Campgrounds from './views/Campgrounds.jsx'
 import CampgroundDetail from './views/CampgroundDetail.jsx'
 import Passport from './views/Passport.jsx'
@@ -36,6 +37,7 @@ function activeNav(p0) {
 function Router({ parts }) {
   const [p0, p1, p2] = parts
   if (!p0) return <Home />
+  if (p0 === 'shared' && p1) return <SharedTrip token={p1} />
   if (p0 === 'trips') {
     if (p1 === 'new') return <TripNew />
     if (p1 === 'ideas') return <TripIdeas />

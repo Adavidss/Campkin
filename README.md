@@ -59,6 +59,15 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
   site (when known), then Recreation.gov, KOA and The Dyrt with the campground
   pre-searched (verified deep links), ReserveAmerica / Hipcamp / Campendium via
   a site-scoped web search (their own search isn't linkable), plus tap-to-call.
+- **Photos & descriptions** — parks, sights, campgrounds and destinations show
+  a photo and a paragraph from Wikipedia (keyless), with a link to read more —
+  in Quick Trip, Discover, Trip Ideas, the Passport, road-trip stops and every
+  pin on the trip map.
+- **Share a trip** — send the whole plan as a readable message (dates,
+  campground, day-by-day with emoji, phone numbers) through the phone's share
+  sheet, or as a link that opens a read-only copy for anyone — no app, no
+  account, nothing uploaded (the trip travels inside the link). Recipients can
+  save it into their own Campkin in one tap.
 - **Trip map** — every trip page has an overview map: start, campground and
   every itinerary stop pinned and colored by day, joined by legs in travel
   order with mileage. Tap any pin to inspect it — rename, note, move to another

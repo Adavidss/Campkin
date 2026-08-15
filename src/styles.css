@@ -2169,6 +2169,136 @@ form + .ideas-row,
   margin-top: 14px;
 }
 
+/* sharing */
+.shared-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--pine-soft);
+  color: var(--pine-deep);
+  font-size: 13.5px;
+  font-weight: 650;
+  margin-bottom: 8px;
+}
+
+.share-preview {
+  margin-top: 14px;
+}
+
+.share-pre {
+  font: 13px/1.5 var(--font-ui);
+  white-space: pre-wrap;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  max-height: 260px;
+  overflow: auto;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+/* wikipedia cards */
+.wiki-hero {
+  margin: 12px 0 4px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.wiki-hero-img {
+  display: block;
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+}
+
+.wiki-hero-body {
+  padding: 11px 13px 12px;
+}
+
+.wiki-extract {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.wiki-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pine);
+}
+
+.wiki-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 6px;
+  padding: 8px 9px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  color: inherit;
+}
+
+.wiki-thumb {
+  width: 54px;
+  height: 54px;
+  border-radius: 9px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--surface-2);
+}
+
+.wiki-thumb-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-faint);
+}
+
+.wiki-row-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.wiki-row-text {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wiki-row-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--pine);
+}
+
+.pick-photo {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  display: block;
+  background: var(--surface-2);
+}
+
 /* trip map legend */
 .map-legend {
   position: absolute;

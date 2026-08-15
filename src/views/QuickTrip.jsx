@@ -12,6 +12,7 @@ import { curateInstant, curateFromArea } from '../lib/curate.js'
 import { fetchArea, prefetchAreas } from '../lib/area.js'
 import { fetchForecast } from '../lib/weather.js'
 import BookingSheet from '../components/BookingSheet.jsx'
+import WikiCard, { WikiThumb } from '../components/WikiCard.jsx'
 import { poiIcon, poiTypeLabel } from '../lib/pois.js'
 import { weatherMeta } from '../lib/weather.js'
 import { stateName } from '../lib/states.js'
@@ -380,6 +381,12 @@ function CuratedTripSheet({ dest, origin, onClose }) {
           {origin ? ` · ${formatMiles(dest.distance ?? haversineMiles(origin, dest))} from ${origin.label || 'you'}` : ''}
         </p>
 
+        {/* what this place is — photo + a paragraph from Wikipedia */}
+        <WikiCard
+          variant="hero"
+          hint={{ name: dest.name, state: dest.state ? stateName(dest.state) : undefined, kind: dest.kind === 'national-park' ? 'National Park' : KIND_META[dest.kind]?.label }}
+        />
+
         {/* the drive — pure math, renders the instant the sheet opens */}
         {instant.miles != null && (
           <div className="curated-block">
@@ -456,7 +463,8 @@ function CuratedTripSheet({ dest, origin, onClose }) {
           )}
           {p &&
             p.sightPicks.map((s) => (
-              <div key={s.id} className="curated-item">
+              <div key={s.id} className="curated-item" style={{ alignItems: 'center' }}>
+                <WikiThumb hint={{ name: s.name, wikipedia: s.wikipedia }} size={40} />
                 <Icon name={poiIcon(s)} size={15} />
                 <span>
                   <b>{s.name}</b> <span className="curated-dim">· {poiTypeLabel(s)}</span>

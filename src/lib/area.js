@@ -148,6 +148,7 @@ function parseCamp(el, t, lat, lon) {
     website: t.website || t['contact:website'] || '',
     operator: t.operator || '',
     state: t['addr:state'] || null,
+    wikipedia: t.wikipedia || null,
   }
 }
 
@@ -165,6 +166,7 @@ function parsePOI(el, t, lat, lon, kind) {
     cuisine: t.cuisine || null,
     ele: t.ele ? Math.round(parseFloat(t.ele) * 3.28084) : null,
     wiki: !!(t.wikipedia || t.wikidata),
+    wikipedia: t.wikipedia || null,
     website: t.website || t['contact:website'] || '',
     phone: t.phone || t['contact:phone'] || '',
     outdoor: t.outdoor_seating === 'yes',

@@ -9,6 +9,7 @@ import { geocodePlace, currentPosition } from '../lib/osm.js'
 import { formatMiles } from '../lib/geo.js'
 import { useMapDark } from '../lib/hooks.js'
 import { setExploreCenter } from './Campgrounds.jsx'
+import WikiCard from '../components/WikiCard.jsx'
 
 // Hand a prefill to the Plan a Trip form.
 export function setTripPrefill(prefill) {
@@ -192,6 +193,7 @@ export default function TripIdeas() {
               </li>
             ))}
           </ul>
+          <WikiCard hint={{ name: `${idea.park.name} National Park`, kind: 'National Park' }} />
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
             <Button small icon="route" onClick={(e) => { e.stopPropagation(); planIdea(idea) }}>
               Plan this trip
