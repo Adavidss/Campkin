@@ -16,9 +16,18 @@ createRoot(document.getElementById('root')).render(
 )
 
 // Offline support (production builds only — the service worker is generated at
-// build time with the asset list baked in).
+// build time with the asset list baked in). When a new version's worker takes
+// over, reload once so updates appear on the first visit, not the second.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register(import.meta.env.BASE_URL + 'sw.js').catch(() => {})
+    let hadController = !!navigator.serviceWorker.controller
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (hadController && !window.__campkinReloaded) {
+        window.__campkinReloaded = true
+        window.location.reload()
+      }
+      hadController = true
+    })
   })
 }

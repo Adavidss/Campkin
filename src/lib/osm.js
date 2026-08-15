@@ -10,6 +10,12 @@ const OVERPASS_ENDPOINTS = [
   'https://overpass.kumi.systems/api/interpreter',
 ]
 
+// A stalled connection must fail fast, not hang a view forever.
+function withTimeout(signal, ms) {
+  const timeout = AbortSignal.timeout(ms)
+  return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 const cache = new Map() // key → results (per session)
 
 function cacheKey(lat, lon, radiusMi) {
@@ -21,12 +27,13 @@ export async function fetchNearbyCampgrounds(lat, lon, radiusMi, { signal } = {}
   if (cache.has(key)) return cache.get(key)
 
   const radiusM = Math.round(radiusMi * 1609.34)
+  // Queried separately with their own caps: in dense parks the hundreds of
+  // backcountry camp_sites must never crowd RV parks out of a shared limit.
   const query = `[out:json][timeout:25];
-(
-  nwr["tourism"="camp_site"](around:${radiusM},${lat},${lon});
-  nwr["tourism"="caravan_site"](around:${radiusM},${lat},${lon});
-);
-out center tags 80;`
+nwr["tourism"="caravan_site"](around:${radiusM},${lat},${lon});
+out center tags 100;
+nwr["tourism"="camp_site"](around:${radiusM},${lat},${lon});
+out center tags 160;`
 
   let lastErr = null
   for (const endpoint of OVERPASS_ENDPOINTS) {
@@ -35,7 +42,7 @@ out center tags 80;`
         method: 'POST',
         body: 'data=' + encodeURIComponent(query),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal,
+        signal: withTimeout(signal, 20000),
       })
       if (!resp.ok) throw new Error(`Overpass ${resp.status}`)
       const data = await resp.json()
@@ -45,7 +52,7 @@ out center tags 80;`
       cache.set(key, results)
       return results
     } catch (err) {
-      if (err.name === 'AbortError') throw err
+      if (err.name === 'AbortError' && signal?.aborted) throw err
       lastErr = err
     }
   }
@@ -70,6 +77,7 @@ function parseElement(el) {
     kind: isCaravanSite ? 'rv-park' : 'campground',
     caravans, // 'yes' | 'no' | null (unknown)
     tents,
+    backcountry: t.backcountry === 'yes',
     maxLengthFt: parseMaxLengthFt(t.maxlength),
     power: t.power_supply && t.power_supply !== 'no',
     water: t.drinking_water === 'yes' || t.water_point === 'yes',
@@ -126,7 +134,10 @@ async function nominatimSearch(q, signal) {
   const url =
     'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=us&q=' +
     encodeURIComponent(q)
-  const resp = await fetch(url, { signal, headers: { Accept: 'application/json' } })
+  const resp = await fetch(url, {
+    signal: withTimeout(signal, 10000),
+    headers: { Accept: 'application/json' },
+  })
   if (!resp.ok) throw new Error('Place search is unavailable right now.')
   return resp.json()
 }

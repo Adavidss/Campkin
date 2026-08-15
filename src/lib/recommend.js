@@ -10,15 +10,18 @@ function reason(text, tone = 'good') {
   return { text, tone }
 }
 
-// OSM sometimes has individual pitches mapped as their own "campground"
-// ("Site 19", "Designated Campsite #6"). Fine on the map, but never a
-// recommendation — and neither is an unnamed spot nobody can look up or call.
-const PITCH_NAME = /(?:^|\s)(?:camp)?(?:site|pitch|spot|space|lot)\s*#?\d+[a-z]?$/i
+// OSM sometimes has individual pitches or backcountry sites mapped as their
+// own "campground" ("Site 19", "Porters Flat #31"). Fine on the map, but never
+// a recommendation — and neither is an unnamed spot nobody can look up.
+const PITCH_NAME = /(?:^|\s)(?:camp)?(?:site|pitch|spot|space|lot)\s*#?\d+[a-z]?$|#\s*\d+[a-z]?$/i
 const GENERIC_NAME = /^(campground|rv park)$/i
 
 export function scoreCampground(r, { rvLen = null, rvMode = true } = {}) {
   const name = (r.name || '').trim()
   if (PITCH_NAME.test(name) || GENERIC_NAME.test(name)) return null
+  if (r.backcountry) {
+    if (rvMode) return null // you can't drive a rig to a hike-in site
+  }
 
   let score = 0
   const reasons = []
@@ -59,6 +62,10 @@ export function scoreCampground(r, { rvLen = null, rvMode = true } = {}) {
     if (r.kind === 'rv-park' && r.tents !== 'yes') {
       score -= 1
       reasons.push(reason('RV park — may not take tents', 'warn'))
+    }
+    if (r.backcountry) {
+      score -= 1
+      reasons.push(reason('Hike-in backcountry site', 'warn'))
     }
   }
 

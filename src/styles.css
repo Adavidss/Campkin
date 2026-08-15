@@ -1819,6 +1819,30 @@ input[type='date'].input {
   box-shadow: var(--shadow-2);
 }
 
+.map-cta {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(6px);
+}
+
+.map-cta p {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+}
+
 .leaflet-container {
   font-family: var(--font-ui);
   background: var(--surface-2);
@@ -1960,6 +1984,77 @@ input[type='date'].input {
   color: var(--danger);
 }
 
+/* weather */
+.weather-rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.weather-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.weather-row + .weather-row {
+  border-top: 1px solid var(--line);
+}
+
+.wx-day {
+  width: 52px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  flex-shrink: 0;
+  font-size: 13.5px;
+}
+
+.wx-label {
+  font-size: 13.5px;
+}
+
+.wx-date {
+  color: var(--ink-faint);
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.wx-icon {
+  color: var(--blue);
+  display: flex;
+  flex-shrink: 0;
+}
+
+.wx-label {
+  flex: 1;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wx-precip {
+  color: var(--blue);
+  font-size: 12.5px;
+  font-weight: 700;
+  width: 38px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.wx-temp {
+  font-weight: 700;
+  width: 66px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.wx-lo {
+  color: var(--ink-faint);
+  font-weight: 600;
+}
+
 /* top picks */
 .chip-picks {
   border-color: color-mix(in srgb, var(--amber) 55%, var(--line-strong));
@@ -2050,6 +2145,81 @@ input[type='date'].input {
 
 .pick-reason.tone-info svg {
   color: var(--ink-faint);
+}
+
+.pick-card.is-selected-card {
+  border-color: var(--pine);
+  box-shadow: 0 0 0 1px var(--pine);
+}
+
+.ideas-row {
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 9%, var(--surface)), var(--surface));
+}
+
+.ideas-row .row-icon {
+  color: var(--amber);
+}
+
+/* suggestion cards in Plan a Trip */
+.sug-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 13px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sug-card + .sug-card {
+  margin-top: 8px;
+}
+
+.sug-card.is-selected {
+  border-color: var(--pine);
+  box-shadow: 0 0 0 1px var(--pine);
+}
+
+.sug-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.8px solid var(--line-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  flex-shrink: 0;
+  margin-top: 2px;
+  transition: all 0.15s ease;
+}
+
+.sug-card.is-selected .sug-check {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: var(--on-accent);
+}
+
+.sug-name {
+  font-weight: 650;
+  font-size: 15px;
+}
+
+.sug-sub {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-top: 1px;
+}
+
+.sug-reasons {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+  line-height: 1.45;
 }
 
 /* toggle switch */

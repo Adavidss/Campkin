@@ -9,6 +9,7 @@ import TripNew from './views/TripNew.jsx'
 import TripDetail from './views/TripDetail.jsx'
 import Checklist from './views/Checklist.jsx'
 import TripComplete from './views/TripComplete.jsx'
+import TripIdeas from './views/TripIdeas.jsx'
 import Campgrounds from './views/Campgrounds.jsx'
 import CampgroundDetail from './views/CampgroundDetail.jsx'
 import Passport from './views/Passport.jsx'
@@ -33,7 +34,11 @@ function activeNav(p0) {
 function Router({ parts }) {
   const [p0, p1, p2] = parts
   if (!p0) return <Home />
-  if (p0 === 'trips') return p1 === 'new' ? <TripNew /> : <Trips />
+  if (p0 === 'trips') {
+    if (p1 === 'new') return <TripNew />
+    if (p1 === 'ideas') return <TripIdeas />
+    return <Trips />
+  }
   if (p0 === 'trip' && p1) {
     if (p2 === 'checklist') return <Checklist tripId={p1} focusCat={parts[3]} />
     if (p2 === 'complete') return <TripComplete tripId={p1} />

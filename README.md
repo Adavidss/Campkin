@@ -37,6 +37,12 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
 - **Route planning** — type "Atlanta, GA → Big Meadows Campground", tap
   Estimate, and get road miles + RV-pace drive time with a route overview map.
   Turn-by-turn always opens in Apple Maps (or Google Maps).
+- **Trip weather** — a keyless Open-Meteo forecast for the campground across
+  your trip dates (hi/lo, rain chance, RV wind warnings), with an honest
+  "forecast opens closer to the trip" beyond the 16-day window.
+- **Trip Ideas** — recommended National Park runs from wherever you are,
+  mapped and ranked with visible reasons; one tap pre-fills Plan a Trip, which
+  can also suggest and attach a campground near the destination.
 - **Backup & restore** — one file with everything, including photos.
 - **Installable PWA** — works offline at the campground.
 

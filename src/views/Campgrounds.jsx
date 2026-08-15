@@ -373,56 +373,53 @@ function FindNearby() {
         )}
       </div>
 
-      {center ? (
-        <div className="map-wrap">
-          <MapView
-            center={{ lat: center.lat, lon: center.lon }}
-            zoom={radius === 10 ? 11 : radius === 25 ? 10 : 9}
-            markers={markers}
-            user={userLoc}
-            dark={mapDark}
-            onMoved={(c, z) => {
-              const drifted = haversineMiles(c, center) > 1.5
-              setMapCenter(drifted ? c : null)
-            }}
-            height={300}
-          />
-          <button
-            type="button"
-            className="map-style-btn"
-            aria-label={mapDark ? 'Switch map to light' : 'Switch map to dark'}
-            title={mapDark ? 'Light map' : 'Dark map'}
-            onClick={() => actions.updateSettings({ mapDark: !mapDark })}
-          >
-            <Icon name={mapDark ? 'sun' : 'moon'} size={18} />
-          </button>
-          {mapCenter && (
-            <Button
-              small
-              className="map-search-btn"
-              icon="refresh"
-              onClick={() => search(mapCenter, 'This area')}
-              disabled={loading}
-            >
-              Search this area
-            </Button>
-          )}
-        </div>
-      ) : (
-        <EmptyState
-          icon="map"
-          title="Campgrounds around you"
-          text={
-            rvModeOn
-              ? 'Find RV-friendly campgrounds near your location or along your route — with your rig’s size in mind.'
-              : 'Find campgrounds near your location or anywhere you’re headed.'
-          }
+      <div className="map-wrap">
+        <MapView
+          center={center ? { lat: center.lat, lon: center.lon } : { lat: 39.4, lon: -97.6 }}
+          zoom={center ? (radius === 10 ? 11 : radius === 25 ? 10 : 9) : 4}
+          markers={markers}
+          user={userLoc}
+          dark={mapDark}
+          onMoved={(c, z) => {
+            if (!center) return
+            const drifted = haversineMiles(c, center) > 1.5
+            setMapCenter(drifted ? c : null)
+          }}
+          height={300}
+        />
+        <button
+          type="button"
+          className="map-style-btn"
+          aria-label={mapDark ? 'Switch map to light' : 'Switch map to dark'}
+          title={mapDark ? 'Light map' : 'Dark map'}
+          onClick={() => actions.updateSettings({ mapDark: !mapDark })}
         >
-          <Button icon="crosshair" onClick={locateMe} disabled={loading}>
-            Use My Location
+          <Icon name={mapDark ? 'sun' : 'moon'} size={18} />
+        </button>
+        {mapCenter && (
+          <Button
+            small
+            className="map-search-btn"
+            icon="refresh"
+            onClick={() => search(mapCenter, 'This area')}
+            disabled={loading}
+          >
+            Search this area
           </Button>
-        </EmptyState>
-      )}
+        )}
+        {!center && !loading && (
+          <div className="map-cta">
+            <p>
+              {rvModeOn
+                ? 'Find RV-friendly campgrounds anywhere — sized to your rig.'
+                : 'Find campgrounds anywhere you’re headed.'}
+            </p>
+            <Button small icon="crosshair" onClick={locateMe}>
+              Use My Location
+            </Button>
+          </div>
+        )}
+      </div>
 
       {loading && (
         <p style={{ textAlign: 'center', color: 'var(--ink-faint)', fontSize: 14, margin: '14px 0' }}>

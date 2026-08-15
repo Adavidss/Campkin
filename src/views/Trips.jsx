@@ -1,7 +1,8 @@
 import React from 'react'
 import { useApp, tripsByStatus } from '../data/store.jsx'
 import { navigate } from '../lib/router.jsx'
-import { Button, EmptyState, Section } from '../components/ui.jsx'
+import { Button, EmptyState, Section, ListRow } from '../components/ui.jsx'
+import Icon from '../components/Icon.jsx'
 import TripCard from '../components/TripCard.jsx'
 
 export default function Trips() {
@@ -24,6 +25,15 @@ export default function Trips() {
           Plan a Trip
         </Button>
       </div>
+
+      <ListRow
+        icon="sparkle"
+        title="Trip Ideas"
+        sub="Recommended park runs near you, mapped and ranked"
+        onClick={() => navigate('trips/ideas')}
+        right={<Icon name="chevronRight" size={16} />}
+        className="ideas-row"
+      />
 
       {none && (
         <EmptyState

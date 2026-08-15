@@ -3,15 +3,45 @@ import { useApp } from '../data/store.jsx'
 import { navigate, back } from '../lib/router.jsx'
 import { Button, Card, Field, useToast } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
-import { todayISO } from '../lib/dates.js'
+import { geocodePlace, fetchNearbyCampgrounds } from '../lib/osm.js'
+import { haversineMiles, formatMiles } from '../lib/geo.js'
+import { topPicks } from '../lib/recommend.js'
+import { takeTripPrefill } from './TripIdeas.jsx'
 
 export default function TripNew() {
-  const { actions } = useApp()
+  const { state, actions } = useApp()
   const toast = useToast()
-  const [name, setName] = useState('')
-  const [destination, setDestination] = useState('')
+  const [prefill] = useState(() => takeTripPrefill())
+  const [name, setName] = useState(prefill?.name || '')
+  const [destination, setDestination] = useState(prefill?.destination || '')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [sugs, setSugs] = useState(null) // null | 'loading' | 'error' | []
+  const [selectedSug, setSelectedSug] = useState(null)
+
+  const rvMode = state.settings.rvMode
+  const rvLen = parseFloat(state.settings.rv?.lengthFt) || null
+
+  async function suggest() {
+    setSugs('loading')
+    setSelectedSug(null)
+    try {
+      const place = await geocodePlace(destination)
+      if (!place) {
+        setSugs('error')
+        toast(`Couldn’t place “${destination.trim()}” — try a town + state.`)
+        return
+      }
+      const found = await fetchNearbyCampgrounds(place.lat, place.lon, 30)
+      const withDistance = found.map((r) => ({ ...r, distance: haversineMiles(place, r) }))
+      const picks = topPicks(withDistance, { rvLen, rvMode }, 4)
+      setSugs(picks)
+      if (!picks.length) toast('Nothing recommendable is mapped near there — you can add the campground later.')
+    } catch (err) {
+      setSugs('error')
+      toast(err.message, { tone: 'danger' })
+    }
+  }
 
   function submit(e) {
     e.preventDefault()
@@ -22,7 +52,13 @@ export default function TripNew() {
     let end = endDate
     if (startDate && (!end || end < startDate)) end = startDate
     const trip = actions.createTrip({ name, destination, startDate, endDate: end })
-    toast('Trip created', { icon: 'check' })
+    if (selectedSug) {
+      const cg = actions.saveCampgroundFromMap(selectedSug)
+      actions.updateTrip(trip.id, { campgroundId: cg.id })
+      toast(`Trip created — ${cg.name} attached`, { icon: 'tent', duration: 3800 })
+    } else {
+      toast('Trip created', { icon: 'check' })
+    }
     navigate(`trip/${trip.id}`, { replace: true })
   }
 
@@ -45,7 +81,7 @@ export default function TripNew() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Shenandoah Weekend"
-            autoFocus
+            autoFocus={!prefill}
             required
           />
         </Field>
@@ -53,11 +89,69 @@ export default function TripNew() {
           <input
             className="input"
             value={destination}
-            onChange={(e) => setDestination(e.target.value)}
+            onChange={(e) => {
+              setDestination(e.target.value)
+              setSugs(null)
+              setSelectedSug(null)
+            }}
             placeholder="Shenandoah National Park, VA"
             autoComplete="off"
           />
         </Field>
+
+        {destination.trim().length >= 3 &&
+          (sugs === null || sugs === 'error' || (Array.isArray(sugs) && sugs.length === 0)) && (
+            <Button variant="soft" small icon="sparkle" onClick={suggest} style={{ marginBottom: 14 }}>
+              {sugs === 'error'
+                ? 'Try suggestions again'
+                : rvMode
+                  ? 'Suggest RV campgrounds there'
+                  : 'Suggest campgrounds there'}
+            </Button>
+          )}
+        {sugs === 'loading' && (
+          <p style={{ fontSize: 13.5, color: 'var(--ink-faint)', margin: '0 0 14px' }}>
+            Looking around {destination.trim()}…
+          </p>
+        )}
+        {Array.isArray(sugs) && sugs.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div className="field-label" style={{ marginBottom: 6 }}>
+              Recommended campgrounds — tap to attach one
+            </div>
+            {sugs.map((s) => (
+              <button
+                key={s.osmId}
+                type="button"
+                className={`sug-card ${selectedSug?.osmId === s.osmId ? 'is-selected' : ''}`}
+                aria-pressed={selectedSug?.osmId === s.osmId}
+                onClick={() => setSelectedSug(selectedSug?.osmId === s.osmId ? null : s)}
+              >
+                <span className="sug-check">
+                  <Icon name="check" size={13} strokeWidth={2.4} />
+                </span>
+                <span style={{ minWidth: 0, flex: 1 }}>
+                  <span className="sug-name">{s.name}</span>
+                  <div className="sug-sub">
+                    {s.kind === 'rv-park' ? 'RV park' : 'Campground'} · {formatMiles(s.distance)} from
+                    destination
+                  </div>
+                  <div className="sug-reasons">
+                    {[...s.reasons.filter((r) => r.tone === 'good'), ...s.reasons.filter((r) => r.tone !== 'good')]
+                      .slice(0, 3)
+                      .map((r) => r.text)
+                      .join(' · ')}
+                  </div>
+                </span>
+              </button>
+            ))}
+            <p className="field-hint" style={{ marginTop: 6 }}>
+              The pick lands in your campground book with its map pin — details fill in on the trip
+              page.
+            </p>
+          </div>
+        )}
+
         <div className="form-grid-2">
           <Field label="First night">
             <input

@@ -9,6 +9,7 @@ import {
 import PhotoStrip from '../components/PhotoStrip.jsx'
 import PlaceSheet from '../components/PlaceSheet.jsx'
 import Stamp from '../components/Stamp.jsx'
+import TripWeather from '../components/TripWeather.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -138,6 +139,12 @@ export default function TripDetail({ tripId }) {
               />
             )}
           </Section>
+
+          {(trip.startDate || status === 'active') && (
+            <Section title="Weather">
+              <TripWeather trip={trip} cg={cg} />
+            </Section>
+          )}
 
           <Section title="Route">
             {trip.route ? (

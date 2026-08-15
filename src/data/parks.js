@@ -67,6 +67,82 @@ export const NATIONAL_PARKS = [
   { id: 'zion', name: 'Zion', states: ['UT'], motif: 'canyon' },
 ]
 
+// Approximate park centers — good enough for distance ranking, trip ideas,
+// and map pins (never for navigation).
+const PARK_COORDS = {
+  acadia: [44.35, -68.21],
+  'american-samoa': [-14.25, -170.68],
+  arches: [38.68, -109.57],
+  badlands: [43.75, -102.5],
+  'big-bend': [29.25, -103.25],
+  biscayne: [25.65, -80.08],
+  'black-canyon': [38.57, -107.72],
+  'bryce-canyon': [37.57, -112.18],
+  canyonlands: [38.2, -109.93],
+  'capitol-reef': [38.2, -111.17],
+  'carlsbad-caverns': [32.17, -104.44],
+  'channel-islands': [34.01, -119.42],
+  congaree: [33.78, -80.78],
+  'crater-lake': [42.94, -122.1],
+  'cuyahoga-valley': [41.24, -81.55],
+  'death-valley': [36.51, -117.08],
+  denali: [63.33, -150.5],
+  'dry-tortugas': [24.63, -82.87],
+  everglades: [25.32, -80.93],
+  'gates-of-the-arctic': [67.78, -153.3],
+  'gateway-arch': [38.63, -90.19],
+  glacier: [48.76, -113.79],
+  'glacier-bay': [58.66, -136.9],
+  'grand-canyon': [36.06, -112.14],
+  'grand-teton': [43.79, -110.68],
+  'great-basin': [38.98, -114.3],
+  'great-sand-dunes': [37.79, -105.59],
+  'great-smoky-mountains': [35.61, -83.53],
+  'guadalupe-mountains': [31.92, -104.87],
+  haleakala: [20.72, -156.17],
+  'hawaii-volcanoes': [19.38, -155.2],
+  'hot-springs': [34.51, -93.05],
+  'indiana-dunes': [41.65, -87.05],
+  'isle-royale': [48.1, -88.55],
+  'joshua-tree': [33.87, -115.9],
+  katmai: [58.6, -155.0],
+  'kenai-fjords': [59.92, -149.65],
+  'kings-canyon': [36.89, -118.55],
+  'kobuk-valley': [67.35, -159.28],
+  'lake-clark': [60.97, -153.42],
+  'lassen-volcanic': [40.49, -121.51],
+  'mammoth-cave': [37.18, -86.1],
+  'mesa-verde': [37.18, -108.49],
+  'mount-rainier': [46.85, -121.75],
+  'new-river-gorge': [38.07, -81.08],
+  'north-cascades': [48.7, -121.2],
+  olympic: [47.8, -123.6],
+  'petrified-forest': [35.07, -109.78],
+  pinnacles: [36.48, -121.16],
+  redwood: [41.21, -124.0],
+  'rocky-mountain': [40.34, -105.68],
+  saguaro: [32.25, -110.5],
+  sequoia: [36.49, -118.57],
+  shenandoah: [38.53, -78.35],
+  'theodore-roosevelt': [46.97, -103.45],
+  'virgin-islands': [18.33, -64.73],
+  voyageurs: [48.5, -92.88],
+  'white-sands': [32.78, -106.17],
+  'wind-cave': [43.57, -103.48],
+  'wrangell-st-elias': [61.0, -142.0],
+  yellowstone: [44.6, -110.5],
+  yosemite: [37.83, -119.5],
+  zion: [37.3, -113.05],
+}
+
+for (const p of NATIONAL_PARKS) {
+  const c = PARK_COORDS[p.id]
+  if (c) {
+    p.lat = c[0]
+    p.lon = c[1]
+  }
+}
+
 export const PARK_BY_ID = Object.fromEntries(NATIONAL_PARKS.map((p) => [p.id, p]))
 
 // Loose name matching so a place typed as "Shenandoah National Park" links to
