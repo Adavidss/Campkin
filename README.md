@@ -30,6 +30,10 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
 - **Find Nearby** — a keyless campground map (OpenStreetMap/Overpass): search
   any town or use your location, filter to RV-friendly sites, see fit badges
   for your rig, then get Apple Maps directions or save straight to your book.
+  The map has its own light/dark toggle, independent of the app theme.
+- **Top Picks** — ranked campground recommendations for wherever you are, with
+  every reason shown (RV sites, hookups, dump station, rig fit, distance) —
+  transparent scoring, no black box.
 - **Route planning** — type "Atlanta, GA → Big Meadows Campground", tap
   Estimate, and get road miles + RV-pace drive time with a route overview map.
   Turn-by-turn always opens in Apple Maps (or Google Maps).
