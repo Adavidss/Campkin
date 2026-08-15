@@ -10,7 +10,7 @@ import PhotoStrip from '../components/PhotoStrip.jsx'
 import MapView from '../components/MapView.jsx'
 import { fmtRange } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, telHref, normalizeUrl } from '../lib/maps.js'
-import { useAutosaveText } from '../lib/hooks.js'
+import { useAutosaveText, useMapDark } from '../lib/hooks.js'
 import { HOOKUP_TYPES } from '../data/model.js'
 import { geocodePlace } from '../lib/osm.js'
 import { setExploreCenter } from './Campgrounds.jsx'
@@ -18,6 +18,7 @@ import { setExploreCenter } from './Campgrounds.jsx'
 export default function CampgroundDetail({ campgroundId }) {
   const { state, actions } = useApp()
   const toast = useToast()
+  const mapDark = useMapDark()
   const cg = state.campgrounds.find((c) => c.id === campgroundId)
   const [editOpen, setEditOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -64,6 +65,7 @@ export default function CampgroundDetail({ campgroundId }) {
             zoom={12}
             markers={[{ id: cg.id, lat: cg.lat, lon: cg.lon, kind: 'campground' }]}
             interactive={false}
+            dark={mapDark}
             height={170}
             className="map-view map-inline"
           />

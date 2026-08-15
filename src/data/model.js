@@ -131,6 +131,7 @@ export function defaultSettings() {
     statesAdded: [], // manual corrections
     statesRemoved: [],
     theme: 'auto',
+    mapDark: null, // null = follow app theme; true/false = explicit map style
     rvMode: true, // Campkin is RV-first; turn off for tent trips
     rv: { type: 'travel-trailer', lengthFt: '', heightFt: '' },
   }

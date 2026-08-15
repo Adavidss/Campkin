@@ -46,6 +46,7 @@ export default function MapView({
   onMoved,
   height = 300,
   interactive = true,
+  dark = false,
   className,
 }) {
   const elRef = useRef(null)
@@ -128,5 +129,12 @@ export default function MapView({
     }
   }, [markers, user, line, fit, zoom])
 
-  return <div ref={elRef} className={className || 'map-view'} style={{ height }} aria-label="Map" />
+  return (
+    <div
+      ref={elRef}
+      className={`${className || 'map-view'} ${dark ? 'map-dark' : ''}`}
+      style={{ height }}
+      aria-label="Map"
+    />
+  )
 }

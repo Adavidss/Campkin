@@ -11,7 +11,7 @@ import PlaceSheet from '../components/PlaceSheet.jsx'
 import Stamp from '../components/Stamp.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
-import { useAutosaveText } from '../lib/hooks.js'
+import { useAutosaveText, useMapDark } from '../lib/hooks.js'
 import { HOOKUP_TYPES, WOULD_RETURN, CATEGORY_BY_ID } from '../data/model.js'
 import { plural } from '../lib/util.js'
 import { geocodePlace } from '../lib/osm.js'
@@ -371,6 +371,7 @@ function NowCard({ trip, cg, onAddNote, onAddPlace, onAddPhoto, onRemember }) {
 }
 
 function CampgroundInfo({ trip, cg, onEdit }) {
+  const mapDark = useMapDark()
   const dest = cg.lat != null ? `${cg.lat},${cg.lon}` : cg.address || `${cg.name}${cg.location ? ', ' + cg.location : ''}`
   return (
     <Card style={{ padding: 0, overflow: 'hidden' }}>
@@ -380,6 +381,7 @@ function CampgroundInfo({ trip, cg, onEdit }) {
           zoom={12}
           markers={[{ id: cg.id, lat: cg.lat, lon: cg.lon, kind: 'campground' }]}
           interactive={false}
+          dark={mapDark}
           height={150}
           className="map-view map-inline"
         />
@@ -441,6 +443,7 @@ function Cell({ label, value, wide }) {
 }
 
 function RouteInfo({ trip, cg, onEdit }) {
+  const mapDark = useMapDark()
   const r = trip.route
   const dest = r.to || (cg ? cg.address || cg.name : trip.destination)
   const hasCoords = r.fromCoord && r.toCoord
@@ -455,6 +458,7 @@ function RouteInfo({ trip, cg, onEdit }) {
           line={[r.fromCoord, r.toCoord]}
           fit="markers"
           interactive={false}
+          dark={mapDark}
           height={170}
           className="map-view map-inline"
         />

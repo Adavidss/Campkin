@@ -2,6 +2,24 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../data/store.jsx'
 import { cachedPhotoUrl } from './images.js'
 
+// Effective map style: the user's explicit map choice, else the app theme.
+export function useMapDark() {
+  const { state } = useApp()
+  const theme = state?.settings?.theme || 'auto'
+  const mapDark = state?.settings?.mapDark
+  const [systemDark, setSystemDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches
+  )
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const onChange = () => setSystemDark(media.matches)
+    media.addEventListener('change', onChange)
+    return () => media.removeEventListener('change', onChange)
+  }, [])
+  if (mapDark != null) return mapDark
+  return theme === 'dark' || (theme === 'auto' && systemDark)
+}
+
 // Resolve a stored photo id to a displayable object URL.
 export function usePhotoUrl(photoId) {
   const { actions } = useApp()

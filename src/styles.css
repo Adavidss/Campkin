@@ -1834,8 +1834,37 @@ input[type='date'].input {
   color: var(--ink-soft) !important;
 }
 
-:root[data-theme='dark'] .leaflet-tile {
-  filter: brightness(0.62) contrast(1.02) saturate(0.55);
+/* Map style is its own toggle (independent of app theme). The dark map is an
+   inverted OSM basemap — labels stay legible, water reads as deep slate. */
+.map-dark .leaflet-tile {
+  filter: invert(1) hue-rotate(180deg) brightness(0.87) contrast(0.9) saturate(0.5);
+}
+
+.map-dark.leaflet-container,
+.map-dark .leaflet-container {
+  background: #1c211d;
+}
+
+.map-style-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 5;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--shadow-1);
+  transition: transform 0.12s ease;
+}
+
+.map-style-btn:active {
+  transform: scale(0.92);
 }
 
 :root[data-theme='dark'] .leaflet-control-zoom a {
@@ -1929,6 +1958,98 @@ input[type='date'].input {
 .rv-fit-note.is-no {
   background: var(--danger-soft);
   color: var(--danger);
+}
+
+/* top picks */
+.chip-picks {
+  border-color: color-mix(in srgb, var(--amber) 55%, var(--line-strong));
+  color: var(--amber);
+}
+
+.pick-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 14px 15px;
+  margin-bottom: 10px;
+}
+
+.pick-head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.pick-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--pine);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 650;
+  flex-shrink: 0;
+}
+
+.pick-name {
+  font-family: var(--font-display);
+  font-size: 17.5px;
+  font-weight: 650;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.pick-sub {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-top: 1px;
+}
+
+.pick-reasons {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pick-reason {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink-soft);
+}
+
+.pick-reason svg {
+  flex-shrink: 0;
+  margin-top: 2.5px;
+}
+
+.pick-reason.tone-good svg {
+  color: var(--sage);
+}
+
+.pick-reason.tone-warn {
+  color: var(--amber);
+}
+
+.pick-reason.tone-warn svg {
+  color: var(--amber);
+}
+
+.pick-reason.tone-info {
+  color: var(--ink-faint);
+}
+
+.pick-reason.tone-info svg {
+  color: var(--ink-faint);
 }
 
 /* toggle switch */

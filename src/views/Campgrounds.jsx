@@ -9,8 +9,10 @@ import MapView from '../components/MapView.jsx'
 import { HOOKUP_TYPES } from '../data/model.js'
 import { fetchNearbyCampgrounds, geocodePlace, currentPosition } from '../lib/osm.js'
 import { haversineMiles, formatMiles, rvFit } from '../lib/geo.js'
+import { topPicks } from '../lib/recommend.js'
 import { appleMapsDirections, googleMapsDirections, telHref, normalizeUrl } from '../lib/maps.js'
 import { plural } from '../lib/util.js'
+import { useMapDark } from '../lib/hooks.js'
 
 // Where Find Nearby was last centered (survives tab hops within the session,
 // and lets Trip Mode's "Nearby" jump straight to the campground).
@@ -223,8 +225,10 @@ function FindNearby() {
   const [selected, setSelected] = useState(null)
   const [mapCenter, setMapCenter] = useState(null) // where the map has drifted
   const [userLoc, setUserLoc] = useState(null)
+  const [picksOpen, setPicksOpen] = useState(false)
   const abortRef = useRef(null)
   const listRef = useRef(null)
+  const mapDark = useMapDark()
 
   const rvLen = parseFloat(state.settings.rv?.lengthFt) || null
   const rvModeOn = state.settings.rvMode
@@ -292,15 +296,23 @@ function FindNearby() {
     }
   }
 
-  const shown = useMemo(() => {
+  const withDistance = useMemo(() => {
     if (!results) return []
-    let list = results
-    if (rvOnly) list = list.filter((r) => r.caravans === 'yes')
-    return list
+    return results
       .map((r) => ({ ...r, distance: center ? haversineMiles(center, r) : 0 }))
       .sort((a, b) => a.distance - b.distance)
-      .slice(0, 40)
-  }, [results, rvOnly, center])
+  }, [results, center])
+
+  const shown = useMemo(() => {
+    let list = withDistance
+    if (rvOnly) list = list.filter((r) => r.caravans === 'yes')
+    return list.slice(0, 40)
+  }, [withDistance, rvOnly])
+
+  const picks = useMemo(
+    () => (picksOpen ? topPicks(withDistance, { rvLen, rvMode: rvModeOn }) : []),
+    [picksOpen, withDistance, rvLen, rvModeOn]
+  )
 
   const markers = shown.map((r) => ({
     id: r.osmId,
@@ -354,6 +366,11 @@ function FindNearby() {
         >
           <Icon name="rv" size={14} /> RV sites
         </button>
+        {results && results.length > 0 && (
+          <button type="button" className="chip chip-picks" onClick={() => setPicksOpen(true)}>
+            <Icon name="sparkle" size={14} /> Top picks
+          </button>
+        )}
       </div>
 
       {center ? (
@@ -363,12 +380,22 @@ function FindNearby() {
             zoom={radius === 10 ? 11 : radius === 25 ? 10 : 9}
             markers={markers}
             user={userLoc}
+            dark={mapDark}
             onMoved={(c, z) => {
               const drifted = haversineMiles(c, center) > 1.5
               setMapCenter(drifted ? c : null)
             }}
             height={300}
           />
+          <button
+            type="button"
+            className="map-style-btn"
+            aria-label={mapDark ? 'Switch map to light' : 'Switch map to dark'}
+            title={mapDark ? 'Light map' : 'Dark map'}
+            onClick={() => actions.updateSettings({ mapDark: !mapDark })}
+          >
+            <Icon name={mapDark ? 'sun' : 'moon'} size={18} />
+          </button>
           {mapCenter && (
             <Button
               small
@@ -447,7 +474,95 @@ function FindNearby() {
           return cg
         }}
       />
+
+      <RecommendSheet
+        open={picksOpen}
+        onClose={() => setPicksOpen(false)}
+        picks={picks}
+        center={center}
+        rvMode={rvModeOn}
+        rvLen={rvLen}
+        savedIds={savedIds}
+        onShow={(r) => {
+          setPicksOpen(false)
+          setSelected(r)
+        }}
+        onSave={(r) => {
+          actions.saveCampgroundFromMap(r)
+          toast('Saved to your book', { icon: 'tent' })
+        }}
+      />
     </>
+  )
+}
+
+function RecommendSheet({ open, onClose, picks, center, rvMode, rvLen, savedIds, onShow, onSave }) {
+  return (
+    <Sheet open={open} onClose={onClose} title={rvMode ? 'Top RV picks' : 'Top camping picks'} wide>
+      <p style={{ fontSize: 13.5, color: 'var(--ink-faint)', margin: '0 0 14px', lineHeight: 1.5 }}>
+        Ranked from what’s mapped within reach of {center?.label || 'here'}
+        {rvMode && rvLen ? `, sized against your ${rvLen} ft rig` : ''}. Every reason is shown —
+        always confirm with the campground before rolling in.
+      </p>
+      {picks.length === 0 ? (
+        <EmptyState
+          compact
+          icon="sparkle"
+          title="Nothing to recommend here"
+          text={
+            rvMode
+              ? 'Nothing mapped nearby lists RV camping. Try a wider radius or another area.'
+              : 'Nothing mapped nearby to rank. Try a wider radius.'
+          }
+        />
+      ) : (
+        picks.map((r, i) => (
+          <div key={r.osmId} className="pick-card">
+            <div className="pick-head">
+              <span className="pick-rank">{i + 1}</span>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div className="pick-name">{r.name}</div>
+                <div className="pick-sub">
+                  {r.kind === 'rv-park' ? 'RV park' : 'Campground'} · {formatMiles(r.distance)}
+                </div>
+              </div>
+              {savedIds.has(r.osmId) && <Icon name="check" size={16} style={{ color: 'var(--sage)' }} />}
+            </div>
+            <ul className="pick-reasons">
+              {r.reasons.map((re, j) => (
+                <li key={j} className={`pick-reason tone-${re.tone}`}>
+                  <Icon
+                    name={re.tone === 'good' ? 'check' : re.tone === 'warn' ? 'info' : 'pin'}
+                    size={12}
+                  />
+                  {re.text}
+                </li>
+              ))}
+            </ul>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              <Button variant="soft" small icon="pin" onClick={() => onShow(r)}>
+                Show on map
+              </Button>
+              <Button
+                variant="soft"
+                small
+                icon="map"
+                href={appleMapsDirections(`${r.lat},${r.lon}`)}
+                target="_blank"
+                rel="noopener"
+              >
+                Directions
+              </Button>
+              {!savedIds.has(r.osmId) && (
+                <Button variant="ghost" small icon="tent" onClick={() => onSave(r)}>
+                  Save
+                </Button>
+              )}
+            </div>
+          </div>
+        ))
+      )}
+    </Sheet>
   )
 }
 
