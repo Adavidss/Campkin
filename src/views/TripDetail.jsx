@@ -15,6 +15,8 @@ import Itinerary from '../components/Itinerary.jsx'
 import BookingSheet from '../components/BookingSheet.jsx'
 import TripMap from '../components/TripMap.jsx'
 import ShareSheet from '../components/ShareSheet.jsx'
+import TripCalendar from '../components/TripCalendar.jsx'
+import Postcard from '../components/Postcard.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -39,6 +41,8 @@ export default function TripDetail({ tripId }) {
   const [discoverCenter, setDiscoverCenter] = useState(null)
   const [discovering, setDiscovering] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
+  const [addDay, setAddDay] = useState(null)
+  const [planView, setPlanView] = useState('list') // list | calendar
   const notesRef = useRef(null)
   const photosRef = useRef(null)
   const rememberRef = useRef(null)
@@ -221,6 +225,7 @@ export default function TripDetail({ tripId }) {
                   icon="plus"
                   onClick={() => {
                     setEditingPlace(null)
+                    setAddDay(null)
                     setPlaceOpen(true)
                   }}
                 >
@@ -229,19 +234,48 @@ export default function TripDetail({ tripId }) {
               </div>
             }
           >
-            <Itinerary
-              trip={trip}
-              places={places}
-              onAdd={() => {
-                setEditingPlace(null)
-                setPlaceOpen(true)
-              }}
-              onDiscover={openDiscover}
-              onEdit={(p) => {
-                setEditingPlace(p)
-                setPlaceOpen(true)
-              }}
-            />
+            <div className="segmented" role="group" aria-label="Itinerary view" style={{ marginBottom: 12 }}>
+              <button type="button" className={`segment ${planView === 'list' ? 'is-active' : ''}`} aria-pressed={planView === 'list'} onClick={() => setPlanView('list')}>
+                <Icon name="list" size={14} style={{ marginRight: 5, verticalAlign: -2 }} /> Day by day
+              </button>
+              <button type="button" className={`segment ${planView === 'calendar' ? 'is-active' : ''}`} aria-pressed={planView === 'calendar'} onClick={() => setPlanView('calendar')}>
+                <Icon name="calendar" size={14} style={{ marginRight: 5, verticalAlign: -2 }} /> Calendar
+              </button>
+            </div>
+            {planView === 'calendar' ? (
+              <TripCalendar
+                trip={trip}
+                places={places}
+                onAddToDay={(d) => {
+                  setEditingPlace(null)
+                  setAddDay(d)
+                  setPlaceOpen(true)
+                }}
+                onEditPlace={(p) => {
+                  setEditingPlace(p)
+                  setPlaceOpen(true)
+                }}
+              />
+            ) : (
+              <Itinerary
+                trip={trip}
+                places={places}
+                onAdd={() => {
+                  setEditingPlace(null)
+                  setAddDay(null)
+                  setPlaceOpen(true)
+                }}
+                onDiscover={openDiscover}
+                onEdit={(p) => {
+                  setEditingPlace(p)
+                  setPlaceOpen(true)
+                }}
+              />
+            )}
+          </Section>
+
+          <Section title="Postcard">
+            <Postcard trip={trip} cg={cg} places={places} />
           </Section>
 
           <Section title="Notes">
@@ -338,6 +372,7 @@ export default function TripDetail({ tripId }) {
         place={editingPlace}
         tripId={trip.id}
         defaultVisited={status !== 'planned'}
+        defaultDay={addDay}
       />
 
       <DiscoverSheet
@@ -711,6 +746,10 @@ function Keepsake({ trip, cg, places }) {
 
       <Section title="Photos">
         <PhotoStrip entityType="trip" entityId={trip.id} coverId={trip.coverPhotoId} onSetCover={() => {}} />
+      </Section>
+
+      <Section title="Postcard">
+        <Postcard trip={trip} cg={cg} places={places} />
       </Section>
 
       {visitedPlaces.length > 0 && (

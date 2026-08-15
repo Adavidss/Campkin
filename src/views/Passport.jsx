@@ -5,6 +5,7 @@ import Icon from '../components/Icon.jsx'
 import {
   Button, Card, Chips, Segmented, Sheet, ConfirmSheet, EmptyState, Field, ListRow, useToast,
 } from '../components/ui.jsx'
+import { useCelebrate } from '../components/Celebrate.jsx'
 import Stamp from '../components/Stamp.jsx'
 import PlaceSheet from '../components/PlaceSheet.jsx'
 import USMap from '../components/USMap.jsx'
@@ -315,6 +316,7 @@ function ParksTab() {
 function ParkSheet({ parkId, onClose }) {
   const { state, actions } = useApp()
   const toast = useToast()
+  const celebrate = useCelebrate()
   const [visitDate, setVisitDate] = useState(todayISO())
   const [confirmClear, setConfirmClear] = useState(false)
   const park = parkId ? PARK_BY_ID[parkId] : null
@@ -416,7 +418,7 @@ function ParkSheet({ parkId, onClose }) {
                 icon="passport"
                 onClick={() => {
                   actions.markParkVisited(park.id, { date: visitDate })
-                  toast('Stamp added to your passport ✦', { icon: 'passport' })
+                  celebrate({ title: `${park.name}, stamped.`, sub: 'One more National Park in your passport.', stampWord: 'VISITED', icon: park.motif, kind: 'park' })
                 }}
               >
                 Mark Visited

@@ -7,7 +7,7 @@ import { todayISO } from '../lib/dates.js'
 import { geocodePlace } from '../lib/osm.js'
 
 // Add / edit a place. Used from trips ("Things to do") and the Passport.
-export default function PlaceSheet({ open, onClose, place, tripId, defaultVisited = true }) {
+export default function PlaceSheet({ open, onClose, place, tripId, defaultVisited = true, defaultDay = null }) {
   const { actions } = useApp()
   const toast = useToast()
   const editing = !!place
@@ -45,6 +45,7 @@ export default function PlaceSheet({ open, onClose, place, tripId, defaultVisite
       visited,
       tripId: place ? place.tripId : tripId || null,
     }
+    if (!place && defaultDay) fields.day = defaultDay
     let saved
     if (editing) {
       saved = actions.updatePlace(place.id, fields)

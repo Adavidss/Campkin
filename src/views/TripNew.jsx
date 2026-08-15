@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useApp } from '../data/store.jsx'
 import { navigate, back, Link } from '../lib/router.jsx'
 import { Button, Card, Field, ListRow, useToast } from '../components/ui.jsx'
+import { useCelebrate } from '../components/Celebrate.jsx'
 import Icon from '../components/Icon.jsx'
 import MapView from '../components/MapView.jsx'
 import { geocodePlace } from '../lib/osm.js'
@@ -15,6 +16,7 @@ import { takeTripPrefill } from './TripIdeas.jsx'
 export default function TripNew() {
   const { state, actions } = useApp()
   const toast = useToast()
+  const celebrate = useCelebrate()
   const mapDark = useMapDark()
   const [prefill] = useState(() => takeTripPrefill())
   const [name, setName] = useState(prefill?.name || '')
@@ -71,14 +73,19 @@ export default function TripNew() {
     let end = endDate
     if (startDate && (!end || end < startDate)) end = startDate
     const trip = actions.createTrip({ name: finalName, destination, startDate, endDate: end })
+    let cgName = null
     if (selectedSug) {
       const cg = actions.saveCampgroundFromMap(selectedSug)
       actions.updateTrip(trip.id, { campgroundId: cg.id })
-      toast(`Trip created — ${cg.name} attached`, { icon: 'tent', duration: 3800 })
-    } else {
-      toast('Trip created', { icon: 'check' })
+      cgName = cg.name
     }
     navigate(`trip/${trip.id}`, { replace: true })
+    celebrate({
+      title: 'Trip saved. Let’s go.',
+      sub: cgName ? `${finalName} — ${cgName} is on the books.` : `${finalName} is in your book. Add a campground and stops when you’re ready.`,
+      stampWord: 'PLANNED',
+      icon: 'route',
+    })
   }
 
   return (

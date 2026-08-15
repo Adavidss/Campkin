@@ -3,13 +3,16 @@ import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import { AppProvider } from './data/store.jsx'
 import { ToastProvider } from './components/ui.jsx'
+import { CelebrateProvider } from './components/Celebrate.jsx'
 import './styles.css'
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <AppProvider>
       <ToastProvider>
-        <App />
+        <CelebrateProvider>
+          <App />
+        </CelebrateProvider>
       </ToastProvider>
     </AppProvider>
   </React.StrictMode>

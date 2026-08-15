@@ -3,6 +3,7 @@ import { useApp } from '../data/store.jsx'
 import { navigate, back } from '../lib/router.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Card, EmptyState, Field, useToast } from '../components/ui.jsx'
+import { useCelebrate } from '../components/Celebrate.jsx'
 import MapView from '../components/MapView.jsx'
 import DiscoverSheet from '../components/DiscoverSheet.jsx'
 import BookingSheet from '../components/BookingSheet.jsx'
@@ -23,6 +24,7 @@ const CORRIDOR_MI = 75
 export default function RoadTrip() {
   const { state, actions } = useApp()
   const toast = useToast()
+  const celebrate = useCelebrate()
   const mapDark = useMapDark()
   const [fromQ, setFromQ] = useState('')
   const [toQ, setToQ] = useState('')
@@ -237,15 +239,17 @@ export default function RoadTrip() {
       }
     }
 
-    toast(
-      planned
-        ? 'Road trip fully planned — every stop has its day'
-        : included.length
-          ? `Road trip created — ${included.length} ${included.length === 1 ? 'stop' : 'stops'} on the list`
-          : 'Road trip created',
-      { icon: 'route', duration: 4200 }
-    )
     navigate(`trip/${trip.id}`, { replace: true })
+    celebrate({
+      title: planned ? 'The whole road trip, planned.' : 'Road trip saved.',
+      sub: planned
+        ? `${dayCount} days · ${totalMiles} miles · every stop has its day. Rearrange anything on the trip page.`
+        : included.length
+          ? `${included.length} ${included.length === 1 ? 'park' : 'parks'} on the way, ${totalMiles} miles. Tap “Plan it all” anytime to fill in stays and sights.`
+          : `${totalMiles} miles of open road. Add stops as you go.`,
+      stampWord: 'ROAD TRIP',
+      icon: 'rv',
+    })
   }
 
   const markers = plan

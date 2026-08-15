@@ -3,6 +3,7 @@ import { useApp } from '../data/store.jsx'
 import { navigate, back } from '../lib/router.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Sheet, EmptyState, Chips, useToast } from '../components/ui.jsx'
+import { useCelebrate } from '../components/Celebrate.jsx'
 import MapView from '../components/MapView.jsx'
 import { NATIONAL_PARKS } from '../data/parks.js'
 import { STATE_PARKS } from '../data/stateParks.js'
@@ -247,6 +248,7 @@ export default function QuickTrip() {
 function CuratedTripSheet({ dest, origin, onClose }) {
   const { state, actions } = useApp()
   const toast = useToast()
+  const celebrate = useCelebrate()
   // The sheet opens INSTANTLY with the drive/nights (pure math); the map data
   // and forecast stream in as separate pieces of state.
   const [ranked, setRanked] = useState(null) // null=loading | 'error' | {campPicks,sightPicks,foodPicks}
@@ -366,8 +368,13 @@ function CuratedTripSheet({ dest, origin, onClose }) {
         lon: f.lon,
       })
     }
-    toast('Your trip is ready — dates set for this weekend', { icon: 'route', duration: 4200 })
     navigate(`trip/${trip.id}`, { replace: true })
+    celebrate({
+      title: 'A whole trip, in one tap.',
+      sub: `${dest.name.replace(/ National Park$/, '')} — dated this weekend, campground picked, stops planned. Change anything you like.`,
+      stampWord: 'PLANNED',
+      icon: 'sparkle',
+    })
   }
 
   return (

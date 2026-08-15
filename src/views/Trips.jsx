@@ -4,6 +4,7 @@ import { navigate } from '../lib/router.jsx'
 import { Button, EmptyState, Section, ListRow, Chips } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 import TripCard from '../components/TripCard.jsx'
+import { TripsCalendar } from '../components/TripCalendar.jsx'
 import { parseStateFrom, stateName } from '../lib/states.js'
 
 const ORGANIZER_THRESHOLD = 6
@@ -16,6 +17,7 @@ export default function Trips() {
   const [q, setQ] = useState('')
   const [filter, setFilter] = useState(null) // upcoming | past | favorites | rated
   const [sort, setSort] = useState('date') // date | name | rating
+  const [view, setView] = useState('list') // list | calendar
 
   const cgName = (t) => state.campgrounds.find((c) => c.id === t.campgroundId)?.name || ''
 
@@ -114,8 +116,23 @@ export default function Trips() {
         </EmptyState>
       )}
 
-      {/* ---- organizer: search + filters ---- */}
       {!none && (
+        <div className="segmented" role="group" aria-label="Trips view" style={{ marginBottom: 12 }}>
+          <button type="button" className={`segment ${view === 'list' ? 'is-active' : ''}`} aria-pressed={view === 'list'} onClick={() => setView('list')}>
+            <Icon name="list" size={14} style={{ marginRight: 5, verticalAlign: -2 }} /> List
+          </button>
+          <button type="button" className={`segment ${view === 'calendar' ? 'is-active' : ''}`} aria-pressed={view === 'calendar'} onClick={() => setView('calendar')}>
+            <Icon name="calendar" size={14} style={{ marginRight: 5, verticalAlign: -2 }} /> Calendar
+          </button>
+        </div>
+      )}
+
+      {!none && view === 'calendar' && (
+        <TripsCalendar trips={state.trips} onOpen={(t) => navigate(`trip/${t.id}`)} />
+      )}
+
+      {/* ---- organizer: search + filters ---- */}
+      {!none && view === 'list' && (
         <div style={{ marginBottom: 14 }}>
           <div style={{ position: 'relative' }}>
             <Icon name="search" size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-faint)' }} />
@@ -156,7 +173,7 @@ export default function Trips() {
         </div>
       )}
 
-      {searching ? (
+      {view === 'calendar' ? null : searching ? (
         results.length === 0 ? (
           <EmptyState compact icon="search" title="No trips match" text="Try another word, or clear the filters." />
         ) : (

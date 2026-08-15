@@ -59,6 +59,16 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
   site (when known), then Recreation.gov, KOA and The Dyrt with the campground
   pre-searched (verified deep links), ReserveAmerica / Hipcamp / Campendium via
   a site-scoped web search (their own search isn't linkable), plus tap-to-call.
+- **A little celebration** — saving a trip, finishing one, or stamping a park
+  slams down a passport stamp with a burst of leaf confetti (respects
+  reduced-motion). Every trip has a **postcard** — destination photo, dates,
+  stops, a stamp — rendered as an image you can share to Messages or
+  Instagram in one tap.
+- **Calendar** — plan longer trips on a month grid: trip days shaded and
+  numbered by day color, dots for how much each day holds; tap a day to see,
+  reorder, move or check off its stops or add to it; tap past the end to
+  extend the trip; "Change start / end" reshapes it while stops keep their
+  dates. Trips → Calendar shows every trip across the months.
 - **Photos & descriptions** — parks, sights, campgrounds and destinations show
   a photo and a paragraph from Wikipedia (keyless), with a link to read more —
   in Quick Trip, Discover, Trip Ideas, the Passport, road-trip stops and every

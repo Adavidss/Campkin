@@ -3,6 +3,7 @@ import { useApp } from '../data/store.jsx'
 import { navigate, back } from '../lib/router.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Card, Field, Segmented, Stars, EmptyState, useToast, Section } from '../components/ui.jsx'
+import { useCelebrate } from '../components/Celebrate.jsx'
 import PhotoStrip from '../components/PhotoStrip.jsx'
 import { WOULD_RETURN } from '../data/model.js'
 import { fmtRange } from '../lib/dates.js'
@@ -10,6 +11,7 @@ import { fmtRange } from '../lib/dates.js'
 export default function TripComplete({ tripId }) {
   const { state, actions } = useApp()
   const toast = useToast()
+  const celebrate = useCelebrate()
   const trip = state.trips.find((t) => t.id === tripId)
   const editing = trip?.completed
   const [rating, setRating] = useState(trip?.rating || 0)
@@ -35,8 +37,16 @@ export default function TripComplete({ tripId }) {
       ? { rating, wouldReturn, favoritePart, favoriteMeal, favoritePlace, memory, rememberNextTime: remember }
       : {}
     actions.completeTrip(trip.id, recap)
-    toast(editing ? 'Recap saved' : 'Added to your travel book ✦', { icon: 'passport', duration: 3800 })
     navigate(`trip/${trip.id}`, { replace: true })
+    if (editing) toast('Recap saved', { icon: 'check' })
+    else
+      celebrate({
+        title: 'Into the travel book it goes.',
+        sub: rating ? `${trip.name} — ${'★'.repeat(rating)}. Your passport just got a little fuller.` : `${trip.name} is a keepsake now. Your passport just got a little fuller.`,
+        stampWord: 'COMPLETED',
+        icon: 'passport',
+        kind: 'complete',
+      })
   }
 
   return (
