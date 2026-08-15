@@ -1,83 +1,13 @@
-// Sights & food discovery via Overpass — keyless, scored, with visible
-// reasons. A wikipedia/wikidata tag is the strongest "actually worth it"
-// signal OSM has; the rest is honest heuristics.
+// Sights & food discovery — scored, with visible reasons. A wikipedia/
+// wikidata tag is the strongest "actually worth it" signal OSM has; the
+// rest is honest heuristics. Data comes from the single cached area fetch.
 
 import { haversineMiles, formatMiles } from './geo.js'
-
-function withTimeout(signal, ms) {
-  const timeout = AbortSignal.timeout(ms)
-  return signal ? AbortSignal.any([signal, timeout]) : timeout
-}
-
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-]
-
-const cache = new Map()
+import { fetchArea } from './area.js'
 
 export async function fetchPOIs(kind, lat, lon, radiusMi, { signal } = {}) {
-  const key = `${kind}:${lat.toFixed(3)},${lon.toFixed(3)},${radiusMi}`
-  if (cache.has(key)) return cache.get(key)
-  const r = Math.round(radiusMi * 1609.34)
-  const query =
-    kind === 'food'
-      ? `[out:json][timeout:20];
-nwr["amenity"~"^(restaurant|cafe)$"]["name"](around:${r},${lat},${lon});
-out center tags 120;`
-      : `[out:json][timeout:20];
-nwr["tourism"~"^(attraction|viewpoint|museum)$"]["name"](around:${r},${lat},${lon});
-out center tags 80;
-nwr["historic"~"^(monument|memorial|fort|castle|ruins|archaeological_site|ship|lighthouse)$"]["name"](around:${r},${lat},${lon});
-out center tags 40;
-nwr["natural"~"^(waterfall|arch|hot_spring)$"]["name"](around:${r},${lat},${lon});
-out center tags 40;`
-
-  let lastErr = null
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        body: 'data=' + encodeURIComponent(query),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: withTimeout(signal, 20000),
-      })
-      if (!resp.ok) throw new Error(`Overpass ${resp.status}`)
-      const data = await resp.json()
-      const out = (data.elements || []).map((el) => parsePOI(el, kind)).filter(Boolean)
-      cache.set(key, out)
-      return out
-    } catch (err) {
-      if (err.name === 'AbortError' && signal?.aborted) throw err
-      lastErr = err
-    }
-  }
-  throw new Error('The discovery service is busy — try again in a moment.', { cause: lastErr })
-}
-
-function parsePOI(el, kind) {
-  const t = el.tags || {}
-  const lat = el.lat ?? el.center?.lat
-  const lon = el.lon ?? el.center?.lon
-  if (lat == null || !t.name) return null
-  return {
-    id: `${el.type}/${el.id}`,
-    name: t.name.split(';')[0].trim(), // OSM joins alt names with ";"
-    lat,
-    lon,
-    kind,
-    tourism: t.tourism || null,
-    historic: t.historic || null,
-    natural: t.natural || null,
-    amenity: t.amenity || null,
-    cuisine: t.cuisine || null,
-    ele: t.ele ? Math.round(parseFloat(t.ele) * 3.28084) : null,
-    wiki: !!(t.wikipedia || t.wikidata),
-    website: t.website || t['contact:website'] || '',
-    phone: t.phone || t['contact:phone'] || '',
-    outdoor: t.outdoor_seating === 'yes',
-    fee: t.fee === 'no' ? false : t.fee ? true : null,
-  }
+  const area = await fetchArea(lat, lon, Math.min(15, radiusMi), { signal })
+  return kind === 'food' ? area.food : area.sights
 }
 
 function prettyCuisine(c) {

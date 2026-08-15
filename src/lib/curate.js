@@ -2,8 +2,8 @@
 // a complete trip proposal — where to stay, what to see, where to eat, the
 // weather and the drive — from keyless sources, each part failing softly.
 
-import { fetchNearbyCampgrounds } from './osm.js'
-import { fetchPOIs, topPOIs, poiTypeLabel } from './pois.js'
+import { fetchArea } from './area.js'
+import { topPOIs, poiTypeLabel } from './pois.js'
 import { fetchForecast } from './weather.js'
 import { topPicks } from './recommend.js'
 import { haversineMiles, roadMilesEstimate, driveTimeEstimate } from './geo.js'
@@ -37,18 +37,15 @@ async function soft(promise, fallback) {
   }
 }
 
-// Overpass rate-limits parallel requests from one client, so its calls run
-// one after another (each is small); the forecast runs alongside. `onPart`
-// lets the UI fill in progressively instead of waiting for everything.
-export async function curateTrip(dest, origin, { rvMode = true, rvLen = null, signal, onPart } = {}) {
+// ONE combined map request (cached a week) — resolves as soon as the map data
+// is in; the forecast arrives via `onForecast` so it never delays the sheet.
+export async function curateTrip(dest, origin, { rvMode = true, rvLen = null, signal, onForecast } = {}) {
   const forecastP = soft(fetchForecast(dest.lat, dest.lon, { signal }), null)
-  const camps = await soft(fetchNearbyCampgrounds(dest.lat, dest.lon, 25, { signal }), null)
-  onPart?.('camps')
-  const sights = await soft(fetchPOIs('sights', dest.lat, dest.lon, 15, { signal }), null)
-  onPart?.('sights')
-  const food = await soft(fetchPOIs('food', dest.lat, dest.lon, 12, { signal }), null)
-  onPart?.('food')
-  const forecast = await forecastP
+  forecastP.then((f) => f && onForecast?.(f.slice(0, 5)))
+  const area = await soft(fetchArea(dest.lat, dest.lon, 15, { signal }), null)
+  const camps = area?.camps || null
+  const sights = area?.sights || null
+  const food = area?.food || null
 
   const campPicks = camps
     ? topPicks(
@@ -69,39 +66,45 @@ export async function curateTrip(dest, origin, { rvMode = true, rvLen = null, si
     campPicks,
     sightPicks,
     foodPicks,
-    forecast: forecast ? forecast.slice(0, 5) : null,
+    forecast: null, // arrives via onForecast
     miles,
     driveTime,
     nights,
-    partial: !camps || !sights || !food,
+    partial: !area,
   }
 }
 
-// Plan every stop of a road trip: for each waypoint, a campground + a few
-// sights + a couple of places to eat. Runs strictly one stop at a time (and
-// one Overpass call at a time inside) so the map service doesn't throttle us.
-// `onProgress(i, total, label)` drives the UI.
-export async function planRoadTrip(stops, { rvMode = true, rvLen = null, signal, onProgress } = {}) {
-  const out = []
-  for (let i = 0; i < stops.length; i++) {
-    const s = stops[i]
-    onProgress?.(i, stops.length, s.name)
-    const camps = await soft(fetchNearbyCampgrounds(s.lat, s.lon, 25, { signal }), null)
-    const sights = await soft(fetchPOIs('sights', s.lat, s.lon, 15, { signal }), null)
-    const food = await soft(fetchPOIs('food', s.lat, s.lon, 12, { signal }), null)
-    out.push({
-      stop: s,
-      camp: camps
-        ? topPicks(
-            camps.map((r) => ({ ...r, distance: haversineMiles(s, r) })),
-            { rvLen, rvMode },
-            1
-          )[0] || null
-        : null,
-      sights: sights ? topPOIs(sights, s, 3) : [],
-      food: food ? topPOIs(food, s, 2) : [],
-    })
+// Plan every stop of a road trip: one combined request per stop, two stops
+// in flight at a time (the free service allows ~2 slots), results streamed
+// back through `onStop(index, result)` so the UI fills in as they land.
+export async function planRoadTrip(stops, { rvMode = true, rvLen = null, signal, onStop, onProgress } = {}) {
+  const results = new Array(stops.length).fill(null)
+  let done = 0
+  const worker = async (queue) => {
+    for (const i of queue) {
+      const s = stops[i]
+      onProgress?.(done, stops.length, s.name)
+      const area = await soft(fetchArea(s.lat, s.lon, 15, { signal }), null)
+      const res = {
+        stop: s,
+        camp: area
+          ? topPicks(
+              area.camps.map((r) => ({ ...r, distance: haversineMiles(s, r) })),
+              { rvLen, rvMode },
+              1
+            )[0] || null
+          : null,
+        sights: area ? topPOIs(area.sights, s, 3) : [],
+        food: area ? topPOIs(area.food, s, 2) : [],
+        missing: !area,
+      }
+      results[i] = res
+      done++
+      onStop?.(i, res)
+      onProgress?.(done, stops.length, null)
+    }
   }
-  onProgress?.(stops.length, stops.length, null)
-  return out
+  const idx = stops.map((_, i) => i)
+  await Promise.all([worker(idx.filter((i) => i % 2 === 0)), worker(idx.filter((i) => i % 2 === 1))])
+  return results
 }

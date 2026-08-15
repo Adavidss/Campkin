@@ -4,7 +4,8 @@ import { navigate, back, Link } from '../lib/router.jsx'
 import { Button, Card, Field, ListRow, useToast } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
 import MapView from '../components/MapView.jsx'
-import { geocodePlace, fetchNearbyCampgrounds } from '../lib/osm.js'
+import { geocodePlace } from '../lib/osm.js'
+import { fetchArea } from '../lib/area.js'
 import { haversineMiles, formatMiles } from '../lib/geo.js'
 import { topPicks } from '../lib/recommend.js'
 import { weekendOf } from '../lib/dates.js'
@@ -38,8 +39,10 @@ export default function TripNew() {
         return
       }
       setDestPlace(place)
-      const found = await fetchNearbyCampgrounds(place.lat, place.lon, 30)
-      const withDistance = found.map((r) => ({ ...r, distance: haversineMiles(place, r) }))
+      // The combined area fetch also warms sights & food for this destination,
+      // so the trip page's Discover is instant afterwards.
+      const area = await fetchArea(place.lat, place.lon, 15)
+      const withDistance = area.camps.map((r) => ({ ...r, distance: haversineMiles(place, r) }))
       const picks = topPicks(withDistance, { rvLen, rvMode }, 4)
       setSugs(picks)
       if (!picks.length) toast('Nothing recommendable is mapped near there — you can add the campground later.')

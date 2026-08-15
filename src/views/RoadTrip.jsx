@@ -130,12 +130,20 @@ export default function RoadTrip() {
   async function planItAll() {
     // The start point is home — plan the parks and the destination.
     const stops = waypoints.filter((w) => w.kind !== 'start')
-    setAuto({ progress: { i: 0, total: stops.length, label: stops[0]?.name } })
+    // Stops stream in as they finish; the list renders progressively.
+    setAuto({ progress: { i: 0, total: stops.length, label: stops[0]?.name }, partial: new Array(stops.length).fill(null) })
     try {
       const result = await planRoadTrip(stops, {
         rvMode,
         rvLen,
-        onProgress: (i, total, label) => setAuto((a) => (a?.result ? a : { progress: { i, total, label } })),
+        onStop: (i, res) =>
+          setAuto((a) => {
+            const partial = [...(a?.partial || [])]
+            partial[i] = res
+            return { ...a, partial }
+          }),
+        onProgress: (i, total, label) =>
+          setAuto((a) => (a?.result ? a : { ...a, progress: { i, total, label } })),
       })
       setAuto({ result })
       toast('Every stop is planned — review, then create', { icon: 'sparkle', duration: 4200 })
@@ -396,10 +404,10 @@ export default function RoadTrip() {
               </div>
             </div>
           )}
-          {auto?.result && (
+          {(auto?.result || auto?.partial?.some(Boolean)) && (
             <div style={{ marginTop: 14 }}>
               <div className="section-title" style={{ fontSize: 18, marginBottom: 8 }}>Your plan, day by day</div>
-              {auto.result.map((r, i) => (
+              {(auto.result || auto.partial).map((r, i) => r ? (
                 <div key={r.stop.name} className="pick-card" style={{ padding: '12px 14px' }}>
                   <div className="pick-head">
                     <span className="pick-rank">{i + 1}</span>
@@ -431,6 +439,13 @@ export default function RoadTrip() {
                       </li>
                     )}
                   </ul>
+                </div>
+              ) : (
+                <div key={i} className="pick-card" style={{ padding: '12px 14px', opacity: 0.55 }}>
+                  <div className="pick-head">
+                    <span className="pick-rank">{i + 1}</span>
+                    <div className="pick-name" style={{ fontSize: 16.5 }}>Planning…</div>
+                  </div>
                 </div>
               ))}
             </div>

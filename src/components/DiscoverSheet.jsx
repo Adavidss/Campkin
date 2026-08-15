@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import Icon from './Icon.jsx'
 import { Sheet, Button, Segmented, EmptyState, useToast } from './ui.jsx'
 import { useApp } from '../data/store.jsx'
-import { fetchPOIs, topPOIs, poiIcon, poiTypeLabel } from '../lib/pois.js'
+import { topPOIs, poiIcon, poiTypeLabel } from '../lib/pois.js'
+import { fetchArea } from '../lib/area.js'
 import { appleMapsSearch } from '../lib/maps.js'
 import { todayISO } from '../lib/dates.js'
 
@@ -19,31 +20,32 @@ export default function DiscoverSheet({ open, onClose, center, tripId }) {
 
   useEffect(() => {
     if (!open) return
-    setState({ sights: null, food: null })
     setTab('sights')
     setAdded(new Set())
   }, [open, center?.lat, center?.lon])
 
+  // One combined fetch fills BOTH tabs — switching between them is instant.
   useEffect(() => {
     if (!open || !center) return
     let cancelled = false
     const ctrl = new AbortController()
-    setState((s) => ({ ...s, [tab]: 'loading' }))
-    fetchPOIs(tab, center.lat, center.lon, tab === 'food' ? 10 : 15, { signal: ctrl.signal })
-      .then((pois) => {
-        if (!cancelled) setState((s) => ({ ...s, [tab]: topPOIs(pois, center, 6) }))
+    setState({ sights: 'loading', food: 'loading' })
+    fetchArea(center.lat, center.lon, 15, { signal: ctrl.signal })
+      .then((area) => {
+        if (cancelled) return
+        setState({ sights: topPOIs(area.sights, center, 6), food: topPOIs(area.food, center, 6) })
       })
       .catch((err) => {
         if (cancelled || err.name === 'AbortError') return
         console.error(err)
-        setState((s) => ({ ...s, [tab]: 'error' }))
+        setState({ sights: 'error', food: 'error' })
       })
     return () => {
       cancelled = true
       ctrl.abort()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, tab, center?.lat, center?.lon, nonce])
+  }, [open, center?.lat, center?.lon, nonce])
 
   if (!center) return null
   const current = state[tab]

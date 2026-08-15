@@ -4,6 +4,7 @@
 // caches, single in-flight query).
 
 import { parseMaxLengthFt } from './geo.js'
+import { cacheGet, cacheSet, dedupe, DAY, HOUR } from './netcache.js'
 
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
@@ -16,48 +17,38 @@ function withTimeout(signal, ms) {
   return signal ? AbortSignal.any([signal, timeout]) : timeout
 }
 
-const cache = new Map() // key → results (per session)
+import { overpass } from './area.js'
+
+async function overpassRace(query, opts) {
+  try {
+    return await overpass(query, opts)
+  } catch (err) {
+    if (err.name === 'AbortError') throw err
+    throw new Error('The campground map service is busy right now — try again in a moment.', { cause: err })
+  }
+}
 
 function cacheKey(lat, lon, radiusMi) {
-  return `${lat.toFixed(3)},${lon.toFixed(3)},${radiusMi}`
+  return `camps:${lat.toFixed(2)},${lon.toFixed(2)},${radiusMi}`
 }
 
 export async function fetchNearbyCampgrounds(lat, lon, radiusMi, { signal } = {}) {
   const key = cacheKey(lat, lon, radiusMi)
-  if (cache.has(key)) return cache.get(key)
-
-  const radiusM = Math.round(radiusMi * 1609.34)
-  // Queried separately with their own caps: in dense parks the hundreds of
-  // backcountry camp_sites must never crowd RV parks out of a shared limit.
-  const query = `[out:json][timeout:25];
+  const hit = await cacheGet(key, 7 * DAY)
+  if (hit) return hit
+  return dedupe(key, async () => {
+    const radiusM = Math.round(radiusMi * 1609.34)
+    // Queried separately with their own caps: in dense parks the hundreds of
+    // backcountry camp_sites must never crowd RV parks out of a shared limit.
+    const query = `[out:json][timeout:22];
 nwr["tourism"="caravan_site"](around:${radiusM},${lat},${lon});
-out center tags 100;
-nwr["tourism"="camp_site"](around:${radiusM},${lat},${lon});
-out center tags 160;`
-
-  let lastErr = null
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        body: 'data=' + encodeURIComponent(query),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: withTimeout(signal, 20000),
-      })
-      if (!resp.ok) throw new Error(`Overpass ${resp.status}`)
-      const data = await resp.json()
-      const results = (data.elements || [])
-        .map((el) => parseElement(el))
-        .filter(Boolean)
-      cache.set(key, results)
-      return results
-    } catch (err) {
-      if (err.name === 'AbortError' && signal?.aborted) throw err
-      lastErr = err
-    }
-  }
-  throw new Error('The campground map service is busy right now — try again in a moment.', {
-    cause: lastErr,
+out center tags 80;
+nwr["tourism"="camp_site"]["backcountry"!="yes"](around:${radiusM},${lat},${lon});
+out center tags 120;`
+    const els = await overpassRace(query, { signal })
+    const results = els.map((el) => parseElement(el)).filter(Boolean)
+    await cacheSet(key, results)
+    return results
   })
 }
 
@@ -95,33 +86,25 @@ function parseElement(el) {
 // protected areas around a point (national parks come from the built-in
 // dataset). Relations only, so we get whole parks rather than every sign.
 
-const destCache = new Map()
-
 export async function fetchNearbyDestinations(lat, lon, radiusMi, { signal } = {}) {
-  const key = `${lat.toFixed(2)},${lon.toFixed(2)},${radiusMi}`
-  if (destCache.has(key)) return destCache.get(key)
-  const r = Math.round(radiusMi * 1609.34)
-  const query = `[out:json][timeout:25];
+  const key = `dests:${lat.toFixed(1)},${lon.toFixed(1)},${radiusMi}`
+  const hit = await cacheGet(key, 14 * DAY)
+  if (hit) return hit
+  return dedupe(key, async () => {
+    const r = Math.round(radiusMi * 1609.34)
+    // Cheap query: name-regex on the leisure=nature_reserve / protected_area
+    // relations only (the regex-less protect_class scan was the slow part).
+    const query = `[out:json][timeout:20];
 (
-  relation["boundary"="protected_area"]["protect_class"~"^(2|5)$"]["name"](around:${r},${lat},${lon});
-  relation["leisure"="nature_reserve"]["name"~"State Park|State Forest|National Forest|Recreation Area|State Recreation|Wildlife|Seashore|Lakeshore",i](around:${r},${lat},${lon});
-  relation["boundary"="national_park"]["name"](around:${r},${lat},${lon});
+  relation["boundary"="protected_area"]["name"~"State Park|State Forest|National Forest|Recreation Area|Seashore|Lakeshore|Wildlife Refuge",i](around:${r},${lat},${lon});
+  relation["leisure"="nature_reserve"]["name"~"State Park|State Forest|National Forest|Recreation Area|Seashore|Lakeshore",i](around:${r},${lat},${lon});
 );
-out center tags 120;`
-  let lastErr = null
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const resp = await fetch(endpoint, {
-        method: 'POST',
-        body: 'data=' + encodeURIComponent(query),
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: withTimeout(signal, 22000),
-      })
-      if (!resp.ok) throw new Error(`Overpass ${resp.status}`)
-      const data = await resp.json()
+out center tags 100;`
+    const els = await overpassRace(query, { signal, timeoutMs: 22000 })
+    {
       const seen = new Set()
       const out = []
-      for (const el of data.elements || []) {
+      for (const el of els) {
         const t = el.tags || {}
         const c = el.center
         if (!c || !t.name) continue
@@ -143,14 +126,10 @@ out center tags 120;`
           website: t.website || '',
         })
       }
-      destCache.set(key, out)
+      await cacheSet(key, out)
       return out
-    } catch (err) {
-      if (err.name === 'AbortError' && signal?.aborted) throw err
-      lastErr = err
     }
-  }
-  throw new Error('The map service is busy right now — try again in a moment.', { cause: lastErr })
+  })
 }
 
 function classifyDestination(t) {
@@ -164,28 +143,31 @@ function classifyDestination(t) {
 
 // --- Nominatim place search ------------------------------------------------
 
-const geoCache = new Map()
-
 export async function geocodePlace(query, { signal } = {}) {
   const q = query.trim()
   if (!q) return null
-  if (geoCache.has(q.toLowerCase())) return geoCache.get(q.toLowerCase())
-  // Nominatim matches literally, so fall back through simpler variants:
-  // full query → first + last segment → drop the first segment → last two.
-  for (const variant of queryVariants(q)) {
-    const rows = await nominatimSearch(variant, signal)
-    if (rows.length) {
-      const r = rows[0]
-      const result = {
-        lat: parseFloat(r.lat),
-        lon: parseFloat(r.lon),
-        label: shortLabel(r.display_name),
+  const key = `geo:${q.toLowerCase()}`
+  const hit = await cacheGet(key, 30 * DAY)
+  if (hit !== undefined) return hit
+  return dedupe(key, async () => {
+    // Nominatim matches literally, so fall back through simpler variants:
+    // full query → first + last segment → drop the first segment → last two.
+    for (const variant of queryVariants(q)) {
+      const rows = await nominatimSearch(variant, signal)
+      if (rows.length) {
+        const r = rows[0]
+        const result = {
+          lat: parseFloat(r.lat),
+          lon: parseFloat(r.lon),
+          label: shortLabel(r.display_name),
+        }
+        await cacheSet(key, result)
+        return result
       }
-      geoCache.set(q.toLowerCase(), result)
-      return result
     }
-  }
-  return null
+    await cacheSet(key, null)
+    return null
+  })
 }
 
 function queryVariants(q) {

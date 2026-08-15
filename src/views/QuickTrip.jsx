@@ -181,10 +181,10 @@ export default function QuickTrip() {
 
       {origin && (
         <p style={{ fontSize: 13, color: 'var(--ink-faint)', margin: '12px 2px 10px' }}>
-          {osmDests === 'loading' && dests.length === 0
+          {dests.length === 0 && osmDests === 'loading'
             ? 'Finding places…'
             : `${dests.length} ${dests.length === 1 ? 'place' : 'places'} within ${range} mi of ${origin.label || 'here'}`}
-          {osmDests === 'loading' && dests.length > 0 ? ' · finding more…' : ''}
+          {osmDests === 'loading' && dests.length > 0 ? ' · state parks loading…' : ''}
         </p>
       )}
 
@@ -242,20 +242,19 @@ function CuratedTripSheet({ dest, origin, onClose }) {
     let live = true
     const ctrl = new AbortController()
     setPlan('loading')
-    setStage('Finding a place to stay…')
+    setStage('Putting your trip together…')
     setCampIdx(0)
+    let forecastEarly = null
     curateTrip(dest, origin, {
       rvMode,
       rvLen,
       signal: ctrl.signal,
-      onPart: (part) => {
-        if (!live) return
-        if (part === 'camps') setStage('Scouting the sights…')
-        if (part === 'sights') setStage('Finding somewhere to eat…')
-        if (part === 'food') setStage('Checking the forecast…')
+      onForecast: (f) => {
+        forecastEarly = f
+        if (live) setPlan((p) => (p && typeof p === 'object' ? { ...p, forecast: f } : p))
       },
     })
-      .then((p) => live && setPlan(p))
+      .then((p) => live && setPlan({ ...p, forecast: forecastEarly }))
       .catch((err) => {
         if (!live || err.name === 'AbortError') return
         console.error(err)

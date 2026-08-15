@@ -3,12 +3,16 @@
 
 export const FORECAST_DAYS = 16
 
-const cache = new Map() // "lat,lon" → { at, days }
+import { cacheGet, cacheSet, dedupe, HOUR } from './netcache.js'
 
 export async function fetchForecast(lat, lon, { signal } = {}) {
-  const key = `${lat.toFixed(2)},${lon.toFixed(2)}`
-  const hit = cache.get(key)
-  if (hit && Date.now() - hit.at < 30 * 60 * 1000) return hit.days
+  const key = `wx:${lat.toFixed(2)},${lon.toFixed(2)}`
+  const hit = await cacheGet(key, HOUR)
+  if (hit) return hit
+  return dedupe(key, () => fetchForecastRaw(lat, lon, key, signal))
+}
+
+async function fetchForecastRaw(lat, lon, key, signal) {
 
   const url =
     'https://api.open-meteo.com/v1/forecast' +
@@ -29,7 +33,7 @@ export async function fetchForecast(lat, lon, { signal } = {}) {
     precip: d.precipitation_probability_max?.[i] ?? null,
     wind: Math.round(d.wind_speed_10m_max?.[i] ?? 0),
   }))
-  cache.set(key, { at: Date.now(), days })
+  await cacheSet(key, days)
   return days
 }
 
