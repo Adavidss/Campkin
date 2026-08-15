@@ -4,6 +4,7 @@ import { useApp } from '../data/store.jsx'
 import { PLACE_CATEGORIES } from '../data/model.js'
 import { STATES, parseStateFrom } from '../lib/states.js'
 import { todayISO } from '../lib/dates.js'
+import { geocodePlace } from '../lib/osm.js'
 
 // Add / edit a place. Used from trips ("Things to do") and the Passport.
 export default function PlaceSheet({ open, onClose, place, tripId, defaultVisited = true }) {
@@ -44,16 +45,25 @@ export default function PlaceSheet({ open, onClose, place, tripId, defaultVisite
       visited,
       tripId: place ? place.tripId : tripId || null,
     }
+    let saved
     if (editing) {
-      actions.updatePlace(place.id, fields)
+      saved = actions.updatePlace(place.id, fields)
       toast('Place updated', { icon: 'check' })
     } else {
-      actions.addPlace(fields)
+      saved = actions.addPlace(fields)
       toast(visited ? 'Added to your passport' : 'Saved to the list', {
         icon: visited ? 'passport' : 'check',
       })
     }
     onClose()
+    // Pin it on the trip map: geocode in the background if we don't have a
+    // location yet (name + state is usually enough for a landmark or town).
+    if (saved && saved.lat == null && (place ? place.name !== fields.name : true)) {
+      const q = [fields.name, fields.state].filter(Boolean).join(', ')
+      geocodePlace(q)
+        .then((r) => r && actions.updatePlace(saved.id, { lat: r.lat, lon: r.lon }))
+        .catch(() => {})
+    }
   }
 
   const isDerived = place && place.source !== 'manual'

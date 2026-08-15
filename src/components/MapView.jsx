@@ -8,22 +8,35 @@ import 'leaflet/dist/leaflet.css'
 // fit: 'markers' | null — fit bounds to markers when they change
 // line: [{lat,lon},{lat,lon}] | null — simple route overview line
 
-function markerHtml(kind, selected) {
-  const fill = selected ? 'var(--amber)' : kind === 'rv-park' ? 'var(--clay)' : 'var(--pine)'
-  const glyph =
-    kind === 'from' || kind === 'to'
-      ? '<circle cx="12" cy="10.4" r="3" fill="#F6F1E5"/>'
-      : `<path d="M12 5.6 7.2 14h9.6z" fill="none" stroke="#F6F1E5" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>`
-  return `<svg width="34" height="42" viewBox="0 0 24 30" xmlns="http://www.w3.org/2000/svg">
+// Day palette for itinerary pins — distinct, still on-brand.
+export const DAY_COLORS = ['#33544A', '#5B7C8C', '#A3705C', '#C08C33', '#7D9682', '#8A6C9C', '#B0574A', '#4F7F9F']
+
+function markerHtml(kind, selected, color, label) {
+  const fill = color || (selected ? 'var(--amber)' : kind === 'rv-park' ? 'var(--clay)' : 'var(--pine)')
+  let glyph
+  if (label != null) {
+    glyph = `<text x="12" y="14" text-anchor="middle" font-family="-apple-system,Segoe UI,Roboto,sans-serif" font-size="9.5" font-weight="700" fill="#F6F1E5">${String(label).slice(0, 3)}</text>`
+  } else if (kind === 'from' || kind === 'to') {
+    glyph = '<circle cx="12" cy="10.4" r="3" fill="#F6F1E5"/>'
+  } else if (kind === 'food') {
+    glyph = '<path d="M9 6v4a1.5 1.5 0 0 0 3 0V6M10.5 6v9M14.6 12V6c-1.4.6-2 2-2 3.6 0 1.2.4 2 1.2 2.4z M14.6 12v3" fill="none" stroke="#F6F1E5" stroke-width="1.4" stroke-linecap="round"/>'
+  } else if (kind === 'sight') {
+    glyph = '<path d="M7 9.4h2l1-1.5h4l1 1.5h2v6.2H7z" fill="none" stroke="#F6F1E5" stroke-width="1.4" stroke-linejoin="round"/><circle cx="12" cy="12.2" r="1.7" fill="none" stroke="#F6F1E5" stroke-width="1.3"/>'
+  } else {
+    glyph = `<path d="M12 5.6 7.2 14h9.6z" fill="none" stroke="#F6F1E5" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/>`
+  }
+  const ring = selected ? '<circle cx="12" cy="10.9" r="11.2" fill="none" stroke="var(--amber)" stroke-width="2"/>' : ''
+  return `<svg width="34" height="42" viewBox="0 0 24 30" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+    ${ring}
     <path d="M12 29C12 29 2.6 18.4 2.6 10.9a9.4 9.4 0 1 1 18.8 0C21.4 18.4 12 29 12 29z" fill="${fill}" stroke="#F6F1E5" stroke-width="1.3"/>
     ${glyph}
   </svg>`
 }
 
-function makeIcon(kind, selected) {
+function makeIcon(kind, selected, color, label) {
   return L.divIcon({
     className: 'ck-marker' + (selected ? ' is-selected' : ''),
-    html: markerHtml(kind, selected),
+    html: markerHtml(kind, selected, color, label),
     iconSize: [34, 42],
     iconAnchor: [17, 40],
   })
@@ -42,6 +55,7 @@ export default function MapView({
   markers = [],
   user = null,
   line = null,
+  legs = null,
   fit = null,
   onMoved,
   height = 300,
@@ -108,9 +122,9 @@ export default function MapView({
     layer.clearLayers()
     for (const m of markers) {
       const mk = L.marker([m.lat, m.lon], {
-        icon: makeIcon(m.kind || 'campground', m.selected),
+        icon: makeIcon(m.kind || 'campground', m.selected, m.color, m.label),
         keyboard: false,
-        zIndexOffset: m.selected ? 500 : 0,
+        zIndexOffset: m.selected ? 500 : m.z || 0,
       })
       if (m.onClick) mk.on('click', () => m.onClick(m))
       mk.addTo(layer)
@@ -122,12 +136,25 @@ export default function MapView({
         { color: '#33544A', weight: 3, opacity: 0.75, dashArray: '1 7', lineCap: 'round' }
       ).addTo(layer)
     }
+    // Multiple colored legs: [{ points:[{lat,lon}…], color }]
+    for (const leg of legs || []) {
+      if (leg.points.length < 2) continue
+      L.polyline(
+        leg.points.map((p) => [p.lat, p.lon]),
+        { color: leg.color || '#33544A', weight: leg.weight || 3.5, opacity: 0.85, lineCap: 'round', lineJoin: 'round', dashArray: leg.dashed ? '1 7' : null }
+      ).addTo(layer)
+    }
     if (fit === 'markers') {
-      const pts = [...markers.map((m) => [m.lat, m.lon]), ...(user ? [[user.lat, user.lon]] : []), ...(line || []).map((p) => [p.lat, p.lon])]
+      const pts = [
+        ...markers.map((m) => [m.lat, m.lon]),
+        ...(user ? [[user.lat, user.lon]] : []),
+        ...(line || []).map((p) => [p.lat, p.lon]),
+        ...(legs || []).flatMap((l) => l.points.map((p) => [p.lat, p.lon])),
+      ]
       if (pts.length >= 2) map.fitBounds(L.latLngBounds(pts).pad(0.18), { animate: false })
       else if (pts.length === 1) map.setView(pts[0], zoom)
     }
-  }, [markers, user, line, fit, zoom])
+  }, [markers, user, line, legs, fit, zoom])
 
   return (
     <div

@@ -1,48 +1,55 @@
 // Booking hand-offs. Campkin has no booking engine — it gets you to the right
-// reservation site with the campground name pre-searched. Every link is a
-// plain https URL, no keys, no tracking.
+// reservation page with the campground already searched.
+//
+// Every URL pattern here was verified against the live site (2026-08):
+//   • recreation.gov/search?q=…            → real results, "Book Online"
+//   • koa.com/search/?q=…                  → real results
+//   • thedyrt.com/search?q=…               → real results
+//   • reserveamerica.com, hipcamp.com, campendium.com ignore query params or
+//     404 on search paths, so those go through a site-scoped web search that
+//     always lands on the campground's actual page.
 
 import { normalizeUrl } from './maps.js'
 
-function q(s) {
-  return encodeURIComponent((s || '').trim())
+const q = (s) => encodeURIComponent((s || '').trim())
+
+// Web search scoped to one site — dependable when a site has no linkable search.
+function siteSearch(site, terms) {
+  return `https://www.google.com/search?q=${q(`site:${site} ${terms}`)}`
 }
 
-// Best-guess where a campground is booked from its name/operator/website.
 export function bookingLinks(cg) {
-  const name = cg.name || ''
-  const state = cg.state || cg.location || ''
+  const name = (cg.name || '').trim()
+  const place = cg.state || cg.location || ''
+  const terms = place ? `${name} ${place}` : name
   const lower = `${name} ${cg.operator || ''} ${cg.website || ''}`.toLowerCase()
-  const links = []
 
-  if (cg.website) {
-    links.push({ id: 'site', label: 'Campground website', icon: 'globe', href: normalizeUrl(cg.website), primary: true })
-  }
-
-  const isFederal =
-    /national (park|forest|recreation|seashore|lakeshore|monument)|nps\.gov|fs\.usda|blm|army corps|usace|recreation\.gov/.test(lower)
   const isKOA = /\bkoa\b/.test(lower)
-  const isStatePark = /state park|state forest|state recreation|reserveamerica/.test(lower)
+  const isFederal = /national (park|forest|recreation|seashore|lakeshore|monument|grassland)|nps\.gov|fs\.usda|blm|army corps|usace|recreation\.gov|corps of engineers/.test(lower)
+  const isStatePark = /state park|state forest|state recreation|state beach|reserveamerica/.test(lower)
 
-  const rec = { id: 'recgov', label: 'Recreation.gov', icon: 'external', href: `https://www.recreation.gov/search?q=${q(name)}` }
-  const ra = { id: 'reserveamerica', label: 'ReserveAmerica', icon: 'external', href: `https://www.reserveamerica.com/explore/search?q=${q(name)}` }
-  const koa = { id: 'koa', label: 'KOA', icon: 'external', href: `https://koa.com/campgrounds/search/?q=${q(name)}` }
-  const hip = { id: 'hipcamp', label: 'Hipcamp', icon: 'external', href: `https://www.hipcamp.com/en-US/search?q=${q(name + (state ? ' ' + state : ''))}` }
-  const camp = { id: 'campendium', label: 'Campendium reviews', icon: 'external', href: `https://www.campendium.com/search?q=${q(name)}` }
-  const dyrt = { id: 'dyrt', label: 'The Dyrt', icon: 'external', href: `https://thedyrt.com/search?q=${q(name)}` }
+  const site = cg.website
+    ? { id: 'site', label: 'Campground website', sub: 'Book direct', icon: 'globe', href: normalizeUrl(cg.website) }
+    : null
+  const rec = { id: 'recgov', label: 'Recreation.gov', sub: 'Federal campgrounds — parks, forests, Corps lakes', icon: 'external', href: `https://www.recreation.gov/search?inventory_type=camping&q=${q(name)}` }
+  const koa = { id: 'koa', label: 'KOA', sub: 'Kampgrounds of America', icon: 'external', href: `https://koa.com/search/?q=${q(name)}` }
+  const ra = { id: 'reserveamerica', label: 'ReserveAmerica', sub: 'Most state parks', icon: 'external', href: siteSearch('reserveamerica.com', terms) }
+  const dyrt = { id: 'dyrt', label: 'The Dyrt', sub: 'Reviews, photos & booking', icon: 'external', href: `https://thedyrt.com/search?q=${q(name)}` }
+  const hip = { id: 'hipcamp', label: 'Hipcamp', sub: 'Private land, ranches, glamping', icon: 'external', href: siteSearch('hipcamp.com', terms) }
+  const camp = { id: 'campendium', label: 'Campendium', sub: 'RV-focused reviews & cell coverage', icon: 'external', href: siteSearch('campendium.com', terms) }
+  const web = { id: 'web', label: 'Search the web', sub: `“${name} reservations”`, icon: 'search', href: `https://www.google.com/search?q=${q(`${terms} campground reservations`)}` }
 
-  if (isKOA) links.push({ ...koa, primary: !cg.website })
-  else if (isFederal) links.push({ ...rec, primary: !cg.website })
-  else if (isStatePark) links.push({ ...ra, primary: !cg.website })
+  // Ordered: the likely-right one first, marked primary.
+  let ordered
+  if (isKOA) ordered = [koa, dyrt, camp, web]
+  else if (isFederal) ordered = [rec, dyrt, camp, web]
+  else if (isStatePark) ordered = [ra, rec, dyrt, camp, web]
+  else ordered = [dyrt, rec, ra, hip, camp, web]
 
-  // Always offer the general options too, minus any already added.
-  for (const l of [rec, ra, koa, hip, camp, dyrt]) {
-    if (!links.some((x) => x.id === l.id)) links.push(l)
-  }
-  return links
+  const links = site ? [site, ...ordered] : ordered
+  return links.map((l, i) => ({ ...l, primary: i === 0 }))
 }
 
 export function bookingPrimary(cg) {
-  const links = bookingLinks(cg)
-  return links.find((l) => l.primary) || links[0]
+  return bookingLinks(cg)[0]
 }

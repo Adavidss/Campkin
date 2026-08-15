@@ -30,13 +30,16 @@ export default function BookingSheet({ open, onClose, cg }) {
           </span>
           <span className="row-main">
             <span className="row-title">{l.label}</span>
-            {l.primary && <span className="row-sub">Best bet for this campground</span>}
+            <span className="row-sub">{l.primary ? `Best bet · ${l.sub}` : l.sub}</span>
           </span>
           <span className="row-right">
             <Icon name="external" size={15} />
           </span>
         </a>
       ))}
+      <p style={{ fontSize: 12, color: 'var(--ink-faint)', marginTop: 12, lineHeight: 1.5 }}>
+        Not every campground is on every service — if one comes up empty, the next usually has it.
+      </p>
     </Sheet>
   )
 }

@@ -56,8 +56,14 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
   for on each drive between them*, laid out day by day, then creates the
   whole itinerary in one tap.
 - **Book it** — every campground has a Book button: the campground's own
-  site (when known), Recreation.gov, ReserveAmerica, KOA, Hipcamp, Campendium
-  and The Dyrt, each pre-searched, plus tap-to-call.
+  site (when known), then Recreation.gov, KOA and The Dyrt with the campground
+  pre-searched (verified deep links), ReserveAmerica / Hipcamp / Campendium via
+  a site-scoped web search (their own search isn't linkable), plus tap-to-call.
+- **Trip map** — every trip page has an overview map: start, campground and
+  every itinerary stop pinned and colored by day, joined by legs in travel
+  order with mileage. Tap any pin to inspect it — rename, note, move to another
+  day, mark done, get directions, book, or remove — and the map and itinerary
+  update on the fly.
 - **Itinerary** — every trip has a day-by-day plan: sights, food and stops
   slotted into days, reorderable, movable between days, checkable as you go;
   Discover adds new finds, Auto-plan spreads unscheduled ideas across the days.

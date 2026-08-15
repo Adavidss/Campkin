@@ -13,6 +13,7 @@ import TripWeather from '../components/TripWeather.jsx'
 import DiscoverSheet from '../components/DiscoverSheet.jsx'
 import Itinerary from '../components/Itinerary.jsx'
 import BookingSheet from '../components/BookingSheet.jsx'
+import TripMap from '../components/TripMap.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -189,6 +190,20 @@ export default function TripDetail({ tripId }) {
           <Section title="Checklist">
             <ChecklistSummary trip={trip} active={status === 'active'} />
           </Section>
+
+          {(trip.route?.fromCoord || cg?.lat != null || places.some((p) => p.lat != null)) && (
+            <Section title="Trip map">
+              <TripMap
+                trip={trip}
+                cg={cg}
+                places={places}
+                onEditPlace={(p) => {
+                  setEditingPlace(p)
+                  setPlaceOpen(true)
+                }}
+              />
+            </Section>
+          )}
 
           <Section
             title="Itinerary"
