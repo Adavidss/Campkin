@@ -9,6 +9,7 @@ import Stamp from '../components/Stamp.jsx'
 import { usePhotoUrl } from '../lib/hooks.js'
 import { plural } from '../lib/util.js'
 import { saveBackupToDevice } from '../lib/backup.js'
+import CountdownWidget from '../components/CountdownWidget.jsx'
 
 export default function Home() {
   const { state, actions } = useApp()
@@ -35,7 +36,17 @@ export default function Home() {
         </div>
       </div>
 
-      {hero && <HeroCard trip={hero} kind={heroKind} />}
+      {heroKind === 'upcoming' && hero.startDate ? (
+        <CountdownWidget trip={hero} />
+      ) : (
+        hero && <HeroCard trip={hero} kind={heroKind} />
+      )}
+      {/* If a trip is happening now, still show the countdown to the one after it. */}
+      {heroKind === 'current' && upcoming[0]?.startDate && (
+        <div style={{ marginTop: 10 }}>
+          <CountdownWidget trip={upcoming[0]} />
+        </div>
+      )}
 
       <BackupNudge />
 

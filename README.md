@@ -59,6 +59,11 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
   site (when known), then Recreation.gov, KOA and The Dyrt with the campground
   pre-searched (verified deep links), ReserveAmerica / Hipcamp / Campendium via
   a site-scoped web search (their own search isn't linkable), plus tap-to-call.
+- **Countdown widget** — Home leads with a widget-style countdown to your
+  next trip: big number over the destination photo, "leaves Thursday",
+  copy that warms as it nears ("About 6 weeks away" → "Almost there — start
+  staging" → "Tomorrow" → "Today — go"), packing progress and the campground
+  surfacing in the final week; rolls over at midnight.
 - **A little celebration** — saving a trip, finishing one, or stamping a park
   slams down a passport stamp with a burst of leaf confetti (respects
   reduced-motion). Every trip has a **postcard** — destination photo, dates,
