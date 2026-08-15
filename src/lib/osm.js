@@ -91,16 +91,14 @@ export async function fetchNearbyDestinations(lat, lon, radiusMi, { signal } = {
   const hit = await cacheGet(key, 14 * DAY)
   if (hit) return hit
   return dedupe(key, async () => {
-    const r = Math.round(radiusMi * 1609.34)
-    // Cheap query: name-regex on the leisure=nature_reserve / protected_area
-    // relations only (the regex-less protect_class scan was the slow part).
-    const query = `[out:json][timeout:20];
-(
-  relation["boundary"="protected_area"]["name"~"State Park|State Forest|National Forest|Recreation Area|Seashore|Lakeshore|Wildlife Refuge",i](around:${r},${lat},${lon});
-  relation["leisure"="nature_reserve"]["name"~"State Park|State Forest|National Forest|Recreation Area|Seashore|Lakeshore",i](around:${r},${lat},${lon});
-);
-out center tags 100;`
-    const els = await overpassRace(query, { signal, timeoutMs: 22000 })
+    // Built-in datasets already cover the big names instantly; this only
+    // enriches with lesser-known state parks, capped small and short so it
+    // never holds anything up.
+    const r = Math.round(Math.min(radiusMi, 120) * 1609.34)
+    const query = `[out:json][timeout:12];
+relation["leisure"="nature_reserve"]["name"~"State Park",i](around:${r},${lat},${lon});
+out center tags 60;`
+    const els = await overpassRace(query, { signal, timeoutMs: 14000 })
     {
       const seen = new Set()
       const out = []

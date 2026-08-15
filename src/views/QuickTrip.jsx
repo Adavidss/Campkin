@@ -5,6 +5,7 @@ import Icon from '../components/Icon.jsx'
 import { Button, Sheet, EmptyState, Chips, useToast } from '../components/ui.jsx'
 import MapView from '../components/MapView.jsx'
 import { NATIONAL_PARKS } from '../data/parks.js'
+import { STATE_PARKS } from '../data/stateParks.js'
 import { fetchNearbyDestinations, geocodePlace, currentPosition, reverseGeocode } from '../lib/osm.js'
 import { haversineMiles, formatMiles, roadMilesEstimate, driveTimeEstimate } from '../lib/geo.js'
 import { curateTrip } from '../lib/curate.js'
@@ -82,6 +83,7 @@ export default function QuickTrip() {
 
   const dests = useMemo(() => {
     if (!origin) return []
+    // Built-in data renders instantly; OSM state parks enrich when they land.
     const parks = NATIONAL_PARKS.filter((p) => p.lat != null)
       .map((p) => ({
         id: `np/${p.id}`,
@@ -94,8 +96,12 @@ export default function QuickTrip() {
         state: p.states[0],
       }))
       .filter((p) => haversineMiles(origin, p) <= range)
+    const builtIn = STATE_PARKS.filter((p) => haversineMiles(origin, p) <= range).map((p, i) => ({
+      id: `sp/${i}`,
+      ...p,
+    }))
     const others = Array.isArray(osmDests) ? osmDests : []
-    const all = [...parks, ...others]
+    const all = [...parks, ...builtIn, ...others]
     const seen = new Set()
     return all
       .map((d) => ({ ...d, distance: haversineMiles(origin, d) }))
@@ -181,10 +187,8 @@ export default function QuickTrip() {
 
       {origin && (
         <p style={{ fontSize: 13, color: 'var(--ink-faint)', margin: '12px 2px 10px' }}>
-          {dests.length === 0 && osmDests === 'loading'
-            ? 'Finding places…'
-            : `${dests.length} ${dests.length === 1 ? 'place' : 'places'} within ${range} mi of ${origin.label || 'here'}`}
-          {osmDests === 'loading' && dests.length > 0 ? ' · state parks loading…' : ''}
+          {`${dests.length} ${dests.length === 1 ? 'place' : 'places'} within ${range} mi of ${origin.label || 'here'}`}
+          {osmDests === 'loading' ? ' · finding more…' : ''}
         </p>
       )}
 
