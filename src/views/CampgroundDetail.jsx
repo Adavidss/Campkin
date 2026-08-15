@@ -8,6 +8,7 @@ import {
 } from '../components/ui.jsx'
 import PhotoStrip from '../components/PhotoStrip.jsx'
 import MapView from '../components/MapView.jsx'
+import BookingSheet from '../components/BookingSheet.jsx'
 import { fmtRange } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -23,6 +24,7 @@ export default function CampgroundDetail({ campgroundId }) {
   const [editOpen, setEditOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [booking, setBooking] = useState(false)
 
   if (!cg) {
     return (
@@ -97,6 +99,9 @@ export default function CampgroundDetail({ campgroundId }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
+          <Button small icon="calendar" onClick={() => setBooking(true)}>
+            Book
+          </Button>
           <Button variant="soft" small icon="map" href={appleMapsDirections(dest)} target="_blank" rel="noopener">
             Directions
           </Button>
@@ -182,6 +187,7 @@ export default function CampgroundDetail({ campgroundId }) {
       </Sheet>
 
       <EditSheet cg={cg} open={editOpen} onClose={() => setEditOpen(false)} />
+      <BookingSheet open={booking} onClose={() => setBooking(false)} cg={cg} />
 
       <ConfirmSheet
         open={confirmDelete}

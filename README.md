@@ -52,8 +52,12 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
 - **Road Trip planner** — give it A→B and it maps the corridor, recommends
   the National Parks worth stopping for (skip any), totals miles and days at
   RV pace, flags legs that need an overnight — and **Plan it all** fills in a
-  campground, sights and meals at every stop, laid out day by day, then
-  creates the whole itinerary in one tap.
+  campground, sights and meals at every stop *plus what's worth pulling over
+  for on each drive between them*, laid out day by day, then creates the
+  whole itinerary in one tap.
+- **Book it** — every campground has a Book button: the campground's own
+  site (when known), Recreation.gov, ReserveAmerica, KOA, Hipcamp, Campendium
+  and The Dyrt, each pre-searched, plus tap-to-call.
 - **Itinerary** — every trip has a day-by-day plan: sights, food and stops
   slotted into days, reorderable, movable between days, checkable as you go;
   Discover adds new finds, Auto-plan spreads unscheduled ideas across the days.

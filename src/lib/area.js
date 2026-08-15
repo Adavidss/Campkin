@@ -5,9 +5,12 @@
 import { cacheGet, cacheSet, dedupe, DAY } from './netcache.js'
 import { parseMaxLengthFt } from './geo.js'
 
+// Benchmarked 2026-08: primary ~2–5s; private.coffee ~3s; mail.ru ~2s.
+// (kumi.systems was 13–40s — dropped.)
 const OVERPASS_ENDPOINTS = [
   'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
 ]
 
 const AREA_TTL = 7 * DAY
@@ -19,10 +22,19 @@ function areaKey(lat, lon, radiusMi) {
 
 // Try the primary mirror; on failure (429/5xx/timeout) fall through to the
 // next. Sequential on purpose — racing both doubles the load that causes the
-// throttling in the first place.
+// throttling in the first place. (kumi is ~7× slower; fallback only.)
+// Remember a mirror that just failed so the next request skips straight to
+// one that works (cleared after a minute).
+const cooling = new Map()
+
 export async function overpass(query, { signal, timeoutMs = 20000 } = {}) {
   let lastErr = null
-  for (const endpoint of OVERPASS_ENDPOINTS) {
+  const now = Date.now()
+  const order = [
+    ...OVERPASS_ENDPOINTS.filter((e) => (cooling.get(e) || 0) < now),
+    ...OVERPASS_ENDPOINTS.filter((e) => (cooling.get(e) || 0) >= now),
+  ]
+  for (const endpoint of order) {
     if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
     try {
       const resp = await fetch(endpoint, {
@@ -33,13 +45,37 @@ export async function overpass(query, { signal, timeoutMs = 20000 } = {}) {
       })
       if (!resp.ok) throw new Error(`Overpass ${resp.status}`)
       const data = await resp.json()
+      cooling.delete(endpoint)
       return data.elements || []
     } catch (err) {
       if (signal?.aborted) throw new DOMException('aborted', 'AbortError')
+      cooling.set(endpoint, Date.now() + 60000)
       lastErr = err
     }
   }
   throw new Error('The map service is busy — try again in a moment.', { cause: lastErr })
+}
+
+// Is this area already cached? (Sync-ish check for UI decisions.)
+export async function hasArea(lat, lon, radiusMi = 15) {
+  return (await cacheGet(areaKey(lat, lon, radiusMi), AREA_TTL)) !== undefined
+}
+
+// Warm the cache for several points, politely: one at a time, skipping
+// anything already cached, abandoning quietly on failure. Used to prefetch
+// the closest destinations while the user is still looking at the map.
+let prefetchToken = 0
+export async function prefetchAreas(points, radiusMi = 15) {
+  const token = ++prefetchToken
+  for (const p of points) {
+    if (token !== prefetchToken) return // a newer prefetch superseded this one
+    if (await hasArea(p.lat, p.lon, radiusMi)) continue
+    try {
+      await fetchArea(p.lat, p.lon, radiusMi)
+    } catch {
+      return // service is busy — stop being a bother
+    }
+  }
 }
 
 // Everything worth knowing around a point, in one shot.
@@ -52,20 +88,26 @@ export async function fetchArea(lat, lon, radiusMi = 15, { signal, force = false
   return dedupe(key, async () => {
     const r = Math.round(radiusMi * 1609.34)
     const rc = Math.round(Math.max(radiusMi, 25) * 1609.34) // campgrounds a bit wider
-    const query = `[out:json][timeout:22];
-nwr["tourism"="caravan_site"](around:${rc},${lat},${lon});
-out center tags 60;
-nwr["tourism"="camp_site"]["backcountry"!="yes"](around:${rc},${lat},${lon});
-out center tags 80;
-nwr["tourism"~"^(attraction|viewpoint|museum)$"]["name"](around:${r},${lat},${lon});
-out center tags 60;
-nwr["natural"~"^(waterfall|arch|hot_spring)$"]["name"](around:${r},${lat},${lon});
-out center tags 25;
-nwr["historic"~"^(monument|fort|castle|ruins|lighthouse)$"]["name"](around:${r},${lat},${lon});
-out center tags 25;
-nwr["amenity"~"^(restaurant|cafe)$"]["name"](around:${Math.round(Math.min(radiusMi, 10) * 1609.34)},${lat},${lon});
-out center tags 80;`
-    const els = await overpass(query, { signal })
+    const rf = r // food: same radius as sights — park centers are far from towns
+    // Nodes+ways only (relations are what make Overpass slow); restaurants are
+    // nodes. Measured ~2s per area on an unthrottled connection.
+    const query = `[out:json][timeout:15];
+(
+  nw["tourism"="caravan_site"](around:${rc},${lat},${lon});
+  nw["tourism"="camp_site"]["backcountry"!="yes"](around:${rc},${lat},${lon});
+);
+out center tags 100;
+(
+  nw["tourism"~"^(attraction|viewpoint|museum)$"]["name"](around:${r},${lat},${lon});
+  nw["natural"~"^(waterfall|arch|hot_spring)$"]["name"](around:${r},${lat},${lon});
+  nw["historic"~"^(monument|fort|castle|ruins|lighthouse)$"]["name"](around:${r},${lat},${lon});
+);
+out center tags 70;
+node["amenity"~"^(restaurant|cafe)$"]["name"](around:${rf},${lat},${lon});
+out tags 60;`
+    // 11s per mirror: enough for a normal answer, quick enough that a stuck
+    // mirror hands off to the next before the user gives up.
+    const els = await overpass(query, { signal, timeoutMs: 11000 })
     const area = { camps: [], sights: [], food: [], at: Date.now() }
     for (const el of els) {
       const t = el.tags || {}

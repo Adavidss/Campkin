@@ -6,11 +6,6 @@
 import { parseMaxLengthFt } from './geo.js'
 import { cacheGet, cacheSet, dedupe, DAY, HOUR } from './netcache.js'
 
-const OVERPASS_ENDPOINTS = [
-  'https://overpass-api.de/api/interpreter',
-  'https://overpass.kumi.systems/api/interpreter',
-]
-
 // A stalled connection must fail fast, not hang a view forever.
 function withTimeout(signal, ms) {
   const timeout = AbortSignal.timeout(ms)
@@ -40,12 +35,12 @@ export async function fetchNearbyCampgrounds(lat, lon, radiusMi, { signal } = {}
     const radiusM = Math.round(radiusMi * 1609.34)
     // Queried separately with their own caps: in dense parks the hundreds of
     // backcountry camp_sites must never crowd RV parks out of a shared limit.
-    const query = `[out:json][timeout:22];
-nwr["tourism"="caravan_site"](around:${radiusM},${lat},${lon});
+    const query = `[out:json][timeout:15];
+nw["tourism"="caravan_site"](around:${radiusM},${lat},${lon});
 out center tags 80;
-nwr["tourism"="camp_site"]["backcountry"!="yes"](around:${radiusM},${lat},${lon});
+nw["tourism"="camp_site"]["backcountry"!="yes"](around:${radiusM},${lat},${lon});
 out center tags 120;`
-    const els = await overpassRace(query, { signal })
+    const els = await overpassRace(query, { signal, timeoutMs: 17000 })
     const results = els.map((el) => parseElement(el)).filter(Boolean)
     await cacheSet(key, results)
     return results

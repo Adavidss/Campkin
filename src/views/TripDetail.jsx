@@ -12,6 +12,7 @@ import Stamp from '../components/Stamp.jsx'
 import TripWeather from '../components/TripWeather.jsx'
 import DiscoverSheet from '../components/DiscoverSheet.jsx'
 import Itinerary from '../components/Itinerary.jsx'
+import BookingSheet from '../components/BookingSheet.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -415,9 +416,11 @@ function NowCard({ trip, cg, onAddNote, onAddPlace, onAddPhoto, onRemember }) {
 
 function CampgroundInfo({ trip, cg, onEdit }) {
   const mapDark = useMapDark()
+  const [booking, setBooking] = useState(false)
   const dest = cg.lat != null ? `${cg.lat},${cg.lon}` : cg.address || `${cg.name}${cg.location ? ', ' + cg.location : ''}`
   return (
     <Card style={{ padding: 0, overflow: 'hidden' }}>
+      <BookingSheet open={booking} onClose={() => setBooking(false)} cg={cg} />
       {cg.lat != null && (
         <MapView
           center={{ lat: cg.lat, lon: cg.lon }}
@@ -451,6 +454,11 @@ function CampgroundInfo({ trip, cg, onEdit }) {
         {cg.address && <Cell label="Address" value={cg.address} wide />}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '12px 16px 14px' }}>
+        {!trip.reservation && (
+          <Button small icon="calendar" onClick={() => setBooking(true)}>
+            Book
+          </Button>
+        )}
         {dest && (
           <Button variant="soft" small icon="map" href={appleMapsDirections(dest)} target="_blank" rel="noopener">
             Apple Maps

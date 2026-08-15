@@ -6,6 +6,7 @@ import {
   Button, Card, Chips, EmptyState, Stars, useToast, Sheet, Field, Segmented,
 } from '../components/ui.jsx'
 import MapView from '../components/MapView.jsx'
+import BookingSheet from '../components/BookingSheet.jsx'
 import { HOOKUP_TYPES } from '../data/model.js'
 import { fetchNearbyCampgrounds, geocodePlace, currentPosition } from '../lib/osm.js'
 import { haversineMiles, formatMiles, rvFit } from '../lib/geo.js'
@@ -608,7 +609,11 @@ function FoundRow({ r, rvLen, saved, selected, onClick }) {
 
 function FoundSheet({ r, rvLen, saved, onClose, onSave }) {
   const [justSaved, setJustSaved] = useState(false)
-  useEffect(() => setJustSaved(false), [r?.osmId])
+  const [booking, setBooking] = useState(false)
+  useEffect(() => {
+    setJustSaved(false)
+    setBooking(false)
+  }, [r?.osmId])
   if (!r) return null
   const fit = rvFit(r.maxLengthFt, rvLen)
   const facts = [
@@ -630,7 +635,11 @@ function FoundSheet({ r, rvLen, saved, onClose, onSave }) {
       title=""
       footer={
         <div className="btn-row">
+          <Button full icon="calendar" onClick={() => setBooking(true)}>
+            Book
+          </Button>
           <Button
+            variant="soft"
             full
             icon="map"
             href={appleMapsDirections(`${r.lat},${r.lon}`)}
@@ -649,7 +658,7 @@ function FoundSheet({ r, rvLen, saved, onClose, onSave }) {
               setJustSaved(true)
             }}
           >
-            {saved || justSaved ? 'In your book' : 'Save to Book'}
+            {saved || justSaved ? 'Saved' : 'Save'}
           </Button>
         </div>
       }
@@ -705,6 +714,7 @@ function FoundSheet({ r, rvLen, saved, onClose, onSave }) {
           availability with the campground.
         </p>
       </div>
+      <BookingSheet open={booking} onClose={() => setBooking(false)} cg={r} />
     </Sheet>
   )
 }

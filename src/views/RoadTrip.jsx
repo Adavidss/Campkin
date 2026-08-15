@@ -5,6 +5,7 @@ import Icon from '../components/Icon.jsx'
 import { Button, Card, EmptyState, Field, useToast } from '../components/ui.jsx'
 import MapView from '../components/MapView.jsx'
 import DiscoverSheet from '../components/DiscoverSheet.jsx'
+import BookingSheet from '../components/BookingSheet.jsx'
 import { geocodePlace, currentPosition, reverseGeocode } from '../lib/osm.js'
 import { corridorInfo, roadMilesEstimate, driveTimeEstimate, formatMiles } from '../lib/geo.js'
 import { NATIONAL_PARKS } from '../data/parks.js'
@@ -30,6 +31,7 @@ export default function RoadTrip() {
   const [loading, setLoading] = useState(false)
   const [locating, setLocating] = useState(false)
   const [auto, setAuto] = useState(null) // null | {progress:{i,total,label}} | {result:[…]}
+  const [bookingCg, setBookingCg] = useState(null)
   const rvMode = state.settings.rvMode
   const rvLen = parseFloat(state.settings.rv?.lengthFt) || null
 
@@ -128,12 +130,12 @@ export default function RoadTrip() {
   }, [plan, included])
 
   async function planItAll() {
-    // The start point is home — plan the parks and the destination.
+    // Plan the parks and the destination — plus the drives between them.
     const stops = waypoints.filter((w) => w.kind !== 'start')
     // Stops stream in as they finish; the list renders progressively.
     setAuto({ progress: { i: 0, total: stops.length, label: stops[0]?.name }, partial: new Array(stops.length).fill(null) })
     try {
-      const result = await planRoadTrip(stops, {
+      const result = await planRoadTrip(waypoints, {
         rvMode,
         rvLen,
         onStop: (i, res) =>
@@ -202,6 +204,9 @@ export default function RoadTrip() {
         })
       }
       if (p) {
+        // Highlights on the drive in come first in the day, then the stop itself.
+        for (const sg of p.along?.sights || []) actions.addPlace({ ...poiToPlaceFields(sg, trip.id, day), notes: `On the way · ${poiTypeLabel(sg)}` })
+        for (const f of p.along?.food || []) actions.addPlace({ ...poiToPlaceFields(f, trip.id, day), notes: `On the way · ${poiTypeLabel(f)}` })
         for (const sg of p.sights) actions.addPlace(poiToPlaceFields(sg, trip.id, day))
         for (const f of p.food) actions.addPlace(poiToPlaceFields(f, trip.id, day))
         if (p.camp) {
@@ -383,7 +388,8 @@ export default function RoadTrip() {
               <div>
                 <div style={{ fontWeight: 680 }}>Plan it all for me</div>
                 <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginTop: 2 }}>
-                  A campground, a few sights and somewhere to eat at every stop — laid out day by day.
+                  A campground, sights and food at every stop — plus what’s worth pulling over for on
+                  each drive between them.
                 </div>
               </div>
               <Button small icon="sparkle" onClick={planItAll}>
@@ -408,13 +414,41 @@ export default function RoadTrip() {
             <div style={{ marginTop: 14 }}>
               <div className="section-title" style={{ fontSize: 18, marginBottom: 8 }}>Your plan, day by day</div>
               {(auto.result || auto.partial).map((r, i) => r ? (
-                <div key={r.stop.name} className="pick-card" style={{ padding: '12px 14px' }}>
+                <div key={r.stop.name}>
+                  {(r.along?.sights?.length > 0 || r.along?.food?.length > 0) && (
+                    <div className="along-row">
+                      <div className="along-rail" />
+                      <div className="along-card">
+                        <div className="along-label">
+                          <Icon name="road" size={11} /> On the way from {r.legFrom}
+                        </div>
+                        {r.along.sights.map((s) => (
+                          <div key={s.id} className="along-item">
+                            <Icon name="camera" size={13} />
+                            <span>{s.name} <span className="dim">· {poiTypeLabel(s)}</span></span>
+                          </div>
+                        ))}
+                        {r.along.food.map((f) => (
+                          <div key={f.id} className="along-item">
+                            <Icon name="food" size={13} />
+                            <span>{f.name} <span className="dim">· {poiTypeLabel(f)}</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                <div className="pick-card" style={{ padding: '12px 14px' }}>
                   <div className="pick-head">
                     <span className="pick-rank">{i + 1}</span>
                     <div style={{ minWidth: 0, flex: 1 }}>
                       <div className="pick-name" style={{ fontSize: 16.5 }}>{r.stop.name}</div>
                       <div className="pick-sub">Day {i + 1}</div>
                     </div>
+                    {r.camp && (
+                      <Button small variant="soft" icon="calendar" onClick={() => setBookingCg(r.camp)}>
+                        Book
+                      </Button>
+                    )}
                   </div>
                   <ul className="pick-reasons" style={{ marginTop: 8 }}>
                     <li className="pick-reason tone-good">
@@ -439,6 +473,7 @@ export default function RoadTrip() {
                       </li>
                     )}
                   </ul>
+                </div>
                 </div>
               ) : (
                 <div key={i} className="pick-card" style={{ padding: '12px 14px', opacity: 0.55 }}>
@@ -471,6 +506,7 @@ export default function RoadTrip() {
       )}
 
       <DiscoverSheet open={!!discover} onClose={() => setDiscover(null)} center={discover} />
+      <BookingSheet open={!!bookingCg} onClose={() => setBookingCg(null)} cg={bookingCg} />
     </>
   )
 }

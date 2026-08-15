@@ -2169,6 +2169,99 @@ form + .ideas-row,
   margin-top: 14px;
 }
 
+/* loading skeletons */
+.skel-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.skel {
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--surface-2) 40%, var(--surface)) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: skel-shimmer 1.3s ease-in-out infinite;
+}
+
+.skel.is-tall {
+  height: 52px;
+  border-radius: var(--r-md);
+  width: 100% !important;
+}
+
+@keyframes skel-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.booking-primary {
+  border-color: var(--pine);
+  box-shadow: 0 0 0 1px var(--pine);
+}
+
+.booking-primary .row-icon {
+  background: var(--pine);
+  color: var(--on-accent);
+}
+
+/* along-the-way rows in the road trip planner */
+.along-row {
+  display: flex;
+  gap: 12px;
+  padding: 0 0 12px;
+}
+
+.along-rail {
+  width: 34px;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.along-rail::before {
+  content: '';
+  border-left: 2px dashed var(--line-strong);
+}
+
+.along-card {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  border: 1px dashed var(--line-strong);
+}
+
+.along-label {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
+}
+
+.along-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  padding: 3px 0;
+  color: var(--ink);
+}
+
+.along-item svg {
+  color: var(--pine);
+  flex-shrink: 0;
+}
+
+.along-item .dim {
+  color: var(--ink-faint);
+  font-size: 12.5px;
+}
+
 .autoplan-cta {
   display: flex;
   align-items: center;
