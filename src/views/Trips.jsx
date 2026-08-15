@@ -77,7 +77,7 @@ export default function Trips() {
         </Button>
       </div>
 
-      <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+      <div className="stack" style={{ marginBottom: 16 }}>
         <ListRow
           icon="pin"
           title="Quick Trip"

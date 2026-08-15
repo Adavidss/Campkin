@@ -122,6 +122,33 @@ body {
   font-size: 16px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  /* Nothing may widen the page: one overflowing card must never push the
+     whole layout (and the bottom nav) off the phone screen. */
+  overflow-x: hidden;
+}
+
+/* Long unbroken strings (URLs, campground names, addresses) wrap instead of
+   forcing their box wider than the screen. */
+p, h1, h2, h3, h4, li, dd, dt, .row-title, .row-sub, .card {
+  overflow-wrap: anywhere;
+}
+
+/* Grid and flex children default to min-width:auto, which lets one long
+   line blow a track/flex-item out past the viewport. Opt every layout child
+   into shrinking; explicit min-widths elsewhere still win. */
+.page :is(.grid, [style*="display: grid"], [style*="display:grid"]) > * {
+  min-width: 0;
+}
+
+.list-row,
+.card,
+.pick-card,
+.sug-card,
+.wiki-row,
+.itin-item,
+.trip-card {
+  min-width: 0;
+  max-width: 100%;
 }
 
 h1, h2, h3, h4 {
@@ -188,9 +215,29 @@ input, textarea, select {
   flex: 1;
   width: 100%;
   max-width: 620px;
+  min-width: 0;
   margin: 0 auto;
   padding: 18px 18px calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 28px);
   animation: page-in 0.24s ease both;
+}
+
+/* Every direct block inside a page must fit the page. */
+.page > * {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Vertical stack of full-width rows/cards. A single explicit column of
+   minmax(0, 1fr) — never the implicit `auto` track that sizes to the widest
+   unbreakable line and pushes the page wider than the phone. */
+.stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.stack > * {
+  min-width: 0;
 }
 
 @keyframes page-in {
@@ -606,6 +653,7 @@ input, textarea, select {
 
 .input, .textarea, .select {
   width: 100%;
+  min-width: 0;
   min-height: 46px;
   padding: 11px 13px;
   background: var(--surface);
@@ -642,8 +690,21 @@ input[type='date'].input {
 
 .form-grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 0 12px;
+}
+
+.form-grid-2 > * {
+  min-width: 0;
+}
+
+/* Native date/time inputs carry a wide intrinsic min-width on iOS; let them
+   shrink to their grid cell instead of pushing it wider. */
+input[type='date'],
+input[type='time'] {
+  min-width: 0;
+  max-width: 100%;
+  -webkit-min-logical-width: 0;
 }
 
 /* chips */
@@ -1166,12 +1227,21 @@ input[type='date'].input {
   color: rgba(253, 250, 242, 0.85);
 }
 
+/* Badges sit in normal flow above the title, right-aligned, and wrap if
+   there are several — the title never runs underneath them. */
 .trip-card-badges {
-  position: absolute;
-  top: 12px;
-  right: 12px;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
+  min-height: 0;
+  margin: -4px -2px 6px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.trip-card-badges:empty {
+  display: none;
 }
 
 .badge {
@@ -2154,6 +2224,16 @@ input[type='date'].input {
 
 .ideas-row {
   background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 9%, var(--surface)), var(--surface));
+}
+
+/* The planner entry cards: their subtitle IS the description on a phone, so
+   let it wrap to two lines instead of truncating. */
+.ideas-row .row-sub {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.35;
 }
 
 .ideas-row .row-icon {
