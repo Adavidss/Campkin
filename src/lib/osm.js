@@ -147,6 +147,21 @@ function shortLabel(displayName) {
   return parts.slice(0, 2).join(', ')
 }
 
+// Coordinates → a short place label ("Decatur, Georgia").
+export async function reverseGeocode(lat, lon, { signal } = {}) {
+  const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=10&lat=${lat}&lon=${lon}`
+  const resp = await fetch(url, {
+    signal: withTimeout(signal, 10000),
+    headers: { Accept: 'application/json' },
+  })
+  if (!resp.ok) return null
+  const data = await resp.json()
+  const a = data.address || {}
+  const town = a.city || a.town || a.village || a.county || ''
+  const state = a.state || ''
+  return [town, state].filter(Boolean).join(', ') || data.display_name?.split(',')[0] || null
+}
+
 export function currentPosition() {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {

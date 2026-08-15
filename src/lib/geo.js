@@ -51,6 +51,29 @@ export function parseMaxLengthFt(value) {
   return Math.round(num * 3.28084)
 }
 
+// Where does point P sit relative to the leg A→B? Returns the perpendicular
+// offset in miles and the fraction t (0 at A, 1 at B) of the projection.
+// Flat-earth approximation — plenty for corridor picking at road-trip scale.
+export function corridorInfo(a, b, p) {
+  const midLat = ((a.lat + b.lat) / 2) * (Math.PI / 180)
+  const kx = Math.cos(midLat) * 69.17 // miles per degree lon
+  const ky = 69.05 // miles per degree lat
+  const ax = a.lon * kx
+  const ay = a.lat * ky
+  const bx = b.lon * kx
+  const by = b.lat * ky
+  const px = p.lon * kx
+  const py = p.lat * ky
+  const dx = bx - ax
+  const dy = by - ay
+  const len2 = dx * dx + dy * dy
+  const t = len2 === 0 ? 0 : ((px - ax) * dx + (py - ay) * dy) / len2
+  const cx = ax + Math.max(0, Math.min(1, t)) * dx
+  const cy = ay + Math.max(0, Math.min(1, t)) * dy
+  const offMi = Math.hypot(px - cx, py - cy)
+  return { offMi, t }
+}
+
 export const RV_TYPES = [
   { id: 'travel-trailer', label: 'Travel Trailer' },
   { id: 'fifth-wheel', label: 'Fifth Wheel' },

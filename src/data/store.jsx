@@ -396,8 +396,9 @@ function makeActions(stateRef, setState) {
     // --- places / passport ---------------------------------------------------
 
     addPlace(fields) {
-      // A place typed as a National Park becomes (or updates) the park's stamp.
-      if (fields.category === 'national-park') {
+      // A *visited* National Park place becomes (or updates) the park's stamp.
+      // Unvisited ("want to go") park stops stay ordinary list items until done.
+      if (fields.category === 'national-park' && fields.visited !== false) {
         const park = findParkByName(fields.name)
         if (park) {
           upsertParkVisit(park.id, {
@@ -420,8 +421,28 @@ function makeActions(stateRef, setState) {
       const s = get()
       const prev = s.places.find((p) => p.id === id)
       if (!prev) return null
+      // Checking off a planned National Park stop records the real park visit
+      // and folds the list item into the park's single passport stamp.
+      if (
+        patch.visited === true &&
+        prev.visited === false &&
+        prev.category === 'national-park' &&
+        prev.source === 'manual'
+      ) {
+        const park = findParkByName(prev.name)
+        if (park) {
+          upsertParkVisit(park.id, {
+            date: patch.dateVisited || todayISO(),
+            tripId: prev.tripId,
+            notes: prev.notes,
+          })
+          patchState({ places: get().places.filter((p) => p.id !== id) })
+          dbDelete('places', id).catch(reportDbError)
+          return get().places.find((p) => p.source === 'park' && p.refId === park.id)
+        }
+      }
       const next = { ...prev, ...patch }
-      patchState({ places: replaceIn(s.places, next) })
+      patchState({ places: replaceIn(get().places, next) })
       persistPut('places', next)
       return next
     },

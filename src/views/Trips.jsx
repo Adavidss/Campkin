@@ -26,14 +26,24 @@ export default function Trips() {
         </Button>
       </div>
 
-      <ListRow
-        icon="sparkle"
-        title="Trip Ideas"
-        sub="Recommended park runs near you, mapped and ranked"
-        onClick={() => navigate('trips/ideas')}
-        right={<Icon name="chevronRight" size={16} />}
-        className="ideas-row"
-      />
+      <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
+        <ListRow
+          icon="sparkle"
+          title="Trip Ideas"
+          sub="Recommended park runs near you, mapped and ranked"
+          onClick={() => navigate('trips/ideas')}
+          right={<Icon name="chevronRight" size={16} />}
+          className="ideas-row"
+        />
+        <ListRow
+          icon="rv"
+          title="Plan a Road Trip"
+          sub="A→B with parks, campgrounds, sights and food on the way"
+          onClick={() => navigate('trips/roadtrip')}
+          right={<Icon name="chevronRight" size={16} />}
+          className="ideas-row"
+        />
+      </div>
 
       {none && (
         <EmptyState

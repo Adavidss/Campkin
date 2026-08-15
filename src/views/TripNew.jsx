@@ -1,16 +1,20 @@
 import React, { useState } from 'react'
 import { useApp } from '../data/store.jsx'
-import { navigate, back } from '../lib/router.jsx'
-import { Button, Card, Field, useToast } from '../components/ui.jsx'
+import { navigate, back, Link } from '../lib/router.jsx'
+import { Button, Card, Field, ListRow, useToast } from '../components/ui.jsx'
 import Icon from '../components/Icon.jsx'
+import MapView from '../components/MapView.jsx'
 import { geocodePlace, fetchNearbyCampgrounds } from '../lib/osm.js'
 import { haversineMiles, formatMiles } from '../lib/geo.js'
 import { topPicks } from '../lib/recommend.js'
+import { weekendOf } from '../lib/dates.js'
+import { useMapDark } from '../lib/hooks.js'
 import { takeTripPrefill } from './TripIdeas.jsx'
 
 export default function TripNew() {
   const { state, actions } = useApp()
   const toast = useToast()
+  const mapDark = useMapDark()
   const [prefill] = useState(() => takeTripPrefill())
   const [name, setName] = useState(prefill?.name || '')
   const [destination, setDestination] = useState(prefill?.destination || '')
@@ -18,6 +22,7 @@ export default function TripNew() {
   const [endDate, setEndDate] = useState('')
   const [sugs, setSugs] = useState(null) // null | 'loading' | 'error' | []
   const [selectedSug, setSelectedSug] = useState(null)
+  const [destPlace, setDestPlace] = useState(null)
 
   const rvMode = state.settings.rvMode
   const rvLen = parseFloat(state.settings.rv?.lengthFt) || null
@@ -32,6 +37,7 @@ export default function TripNew() {
         toast(`Couldn’t place “${destination.trim()}” — try a town + state.`)
         return
       }
+      setDestPlace(place)
       const found = await fetchNearbyCampgrounds(place.lat, place.lon, 30)
       const withDistance = found.map((r) => ({ ...r, distance: haversineMiles(place, r) }))
       const picks = topPicks(withDistance, { rvLen, rvMode }, 4)
@@ -43,15 +49,25 @@ export default function TripNew() {
     }
   }
 
+  function applyWeekend(offset) {
+    const { start, end } = weekendOf(offset)
+    setStartDate(start)
+    setEndDate(end)
+  }
+
   function submit(e) {
     e.preventDefault()
-    if (!name.trim()) {
-      toast('Give the trip a name to get started.')
+    let finalName = name.trim()
+    if (!finalName && destination.trim()) {
+      finalName = `${destination.split(',')[0].trim()} Trip`
+    }
+    if (!finalName) {
+      toast('Give the trip a name or destination to get started.')
       return
     }
     let end = endDate
     if (startDate && (!end || end < startDate)) end = startDate
-    const trip = actions.createTrip({ name, destination, startDate, endDate: end })
+    const trip = actions.createTrip({ name: finalName, destination, startDate, endDate: end })
     if (selectedSug) {
       const cg = actions.saveCampgroundFromMap(selectedSug)
       actions.updateTrip(trip.id, { campgroundId: cg.id })
@@ -116,8 +132,30 @@ export default function TripNew() {
         )}
         {Array.isArray(sugs) && sugs.length > 0 && (
           <div style={{ marginBottom: 16 }}>
+            {destPlace && (
+              <div style={{ marginBottom: 10 }}>
+                <MapView
+                  center={{ lat: destPlace.lat, lon: destPlace.lon }}
+                  zoom={10}
+                  markers={[
+                    { id: 'dest', lat: destPlace.lat, lon: destPlace.lon, kind: 'to' },
+                    ...sugs.map((s) => ({
+                      id: s.osmId,
+                      lat: s.lat,
+                      lon: s.lon,
+                      kind: s.kind,
+                      selected: selectedSug?.osmId === s.osmId,
+                      onClick: () => setSelectedSug(selectedSug?.osmId === s.osmId ? null : s),
+                    })),
+                  ]}
+                  fit="markers"
+                  dark={mapDark}
+                  height={200}
+                />
+              </div>
+            )}
             <div className="field-label" style={{ marginBottom: 6 }}>
-              Recommended campgrounds — tap to attach one
+              Recommended campgrounds — tap a pin or card to attach one
             </div>
             {sugs.map((s) => (
               <button
@@ -152,6 +190,14 @@ export default function TripNew() {
           </div>
         )}
 
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <button type="button" className="chip" onClick={() => applyWeekend(0)}>
+            <Icon name="calendar" size={13} /> This weekend
+          </button>
+          <button type="button" className="chip" onClick={() => applyWeekend(1)}>
+            Next weekend
+          </button>
+        </div>
         <div className="form-grid-2">
           <Field label="First night">
             <input
@@ -182,6 +228,15 @@ export default function TripNew() {
           You can add the campground, checklist, and route from the trip page.
         </p>
       </Card>
+
+      <ListRow
+        icon="rv"
+        className="ideas-row"
+        title="Planning a multi-stop road trip?"
+        sub="Map a route with parks, campgrounds, sights and food along the way"
+        onClick={() => navigate('trips/roadtrip')}
+        right={<Icon name="chevronRight" size={16} />}
+      />
     </>
   )
 }

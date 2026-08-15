@@ -78,6 +78,21 @@ export function countdownLabel(iso) {
   return null
 }
 
+// Friday→Sunday of the current or a following weekend (already-started
+// weekends begin today).
+export function weekendOf(offsetWeeks = 0) {
+  const now = new Date()
+  const day = now.getDay() // 0 Sun … 6 Sat
+  let toFriday = (5 - day + 7) % 7
+  if (day === 6 || day === 0) toFriday = day === 6 ? -1 : -2 // mid-weekend
+  const fri = new Date(now)
+  fri.setDate(now.getDate() + toFriday + offsetWeeks * 7)
+  const start = offsetWeeks === 0 && fri < now ? now : fri
+  const sun = new Date(fri)
+  sun.setDate(fri.getDate() + 2)
+  return { start: toISO(start), end: toISO(sun) }
+}
+
 // "3:00 PM" from "15:00"
 export function fmtTime(hhmm) {
   if (!hhmm) return ''

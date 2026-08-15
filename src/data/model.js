@@ -10,6 +10,7 @@ export const PLACE_CATEGORIES = [
   { id: 'city', label: 'City / Town', icon: 'town', ink: 'blue' },
   { id: 'landmark', label: 'Landmark', icon: 'landmark', ink: 'charcoal' },
   { id: 'scenic-drive', label: 'Scenic Drive', icon: 'road', ink: 'pine' },
+  { id: 'food', label: 'Food & Drink', icon: 'food', ink: 'clay' },
   { id: 'beach', label: 'Beach', icon: 'waves', ink: 'blue' },
   { id: 'historic-site', label: 'Historic Site', icon: 'column', ink: 'clay' },
   { id: 'other', label: 'Other', icon: 'pin', ink: 'sage' },

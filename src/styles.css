@@ -2153,12 +2153,90 @@ input[type='date'].input {
 }
 
 .ideas-row {
-  margin-bottom: 16px;
   background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 9%, var(--surface)), var(--surface));
 }
 
 .ideas-row .row-icon {
   color: var(--amber);
+}
+
+.ideas-row + .ideas-row {
+  margin-top: 0;
+}
+
+form + .ideas-row,
+.card + .ideas-row {
+  margin-top: 14px;
+}
+
+/* road trip stops */
+.stop-row {
+  display: flex;
+  gap: 12px;
+  padding: 4px 0 14px;
+}
+
+.stop-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 34px;
+}
+
+.stop-rail::after {
+  content: '';
+  flex: 1;
+  width: 0;
+  margin-top: 4px;
+  border-left: 2px dashed var(--line-strong);
+}
+
+.stop-row:last-of-type .stop-rail::after {
+  display: none;
+}
+
+.stop-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--pine-soft);
+  color: var(--pine-deep);
+  flex-shrink: 0;
+}
+
+.stop-dot.is-end {
+  background: var(--pine);
+  color: var(--on-accent);
+}
+
+.stop-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.stop-sub {
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  margin-top: 1px;
+}
+
+.stop-row.is-off .stop-title,
+.stop-row.is-off .stop-sub {
+  color: var(--ink-faint);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--ink-faint) 50%, transparent);
+}
+
+.stop-row.is-off .stop-dot {
+  background: var(--surface-2);
+  color: var(--ink-faint);
 }
 
 /* suggestion cards in Plan a Trip */

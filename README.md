@@ -42,7 +42,16 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
   "forecast opens closer to the trip" beyond the 16-day window.
 - **Trip Ideas** — recommended National Park runs from wherever you are,
   mapped and ranked with visible reasons; one tap pre-fills Plan a Trip, which
-  can also suggest and attach a campground near the destination.
+  has an inbuilt map, weekend date shortcuts, and suggests + attaches a
+  campground near the destination.
+- **Road Trip planner** — give it A→B and it maps the corridor, recommends
+  the National Parks worth stopping for (skip any), totals miles and days at
+  RV pace, flags legs that need an overnight, and creates the whole trip with
+  the stops as your to-do list.
+- **Sights & Food** — keyless discovery around any stop or campground:
+  landmarks, viewpoints, waterfalls, museums, cafés and restaurants, ranked
+  with visible reasons (Wikipedia-notable spots surface first) and addable to
+  a trip's Things to Do in one tap.
 - **Backup & restore** — one file with everything, including photos.
 - **Installable PWA** — works offline at the campground.
 

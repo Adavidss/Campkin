@@ -10,6 +10,7 @@ import TripDetail from './views/TripDetail.jsx'
 import Checklist from './views/Checklist.jsx'
 import TripComplete from './views/TripComplete.jsx'
 import TripIdeas from './views/TripIdeas.jsx'
+import RoadTrip from './views/RoadTrip.jsx'
 import Campgrounds from './views/Campgrounds.jsx'
 import CampgroundDetail from './views/CampgroundDetail.jsx'
 import Passport from './views/Passport.jsx'
@@ -37,6 +38,7 @@ function Router({ parts }) {
   if (p0 === 'trips') {
     if (p1 === 'new') return <TripNew />
     if (p1 === 'ideas') return <TripIdeas />
+    if (p1 === 'roadtrip') return <RoadTrip />
     return <Trips />
   }
   if (p0 === 'trip' && p1) {

@@ -10,6 +10,7 @@ import PhotoStrip from '../components/PhotoStrip.jsx'
 import PlaceSheet from '../components/PlaceSheet.jsx'
 import Stamp from '../components/Stamp.jsx'
 import TripWeather from '../components/TripWeather.jsx'
+import DiscoverSheet from '../components/DiscoverSheet.jsx'
 import { fmtRange, fmtTime, fmtDate, countdownLabel, nightsOf, todayISO } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText, useMapDark } from '../lib/hooks.js'
@@ -31,6 +32,8 @@ export default function TripDetail({ tripId }) {
   const [placeOpen, setPlaceOpen] = useState(false)
   const [editingPlace, setEditingPlace] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [discoverCenter, setDiscoverCenter] = useState(null)
+  const [discovering, setDiscovering] = useState(false)
   const notesRef = useRef(null)
   const photosRef = useRef(null)
   const rememberRef = useRef(null)
@@ -53,6 +56,27 @@ export default function TripDetail({ tripId }) {
   const focusEl = (ref) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     setTimeout(() => ref.current?.focus?.(), 350)
+  }
+
+  async function openDiscover() {
+    if (cg?.lat != null) {
+      setDiscoverCenter({ lat: cg.lat, lon: cg.lon, label: cg.name })
+      return
+    }
+    if (!trip.destination && !cg?.address) {
+      toast('Add a destination or campground first.')
+      return
+    }
+    setDiscovering(true)
+    try {
+      const { geocodePlace } = await import('../lib/osm.js')
+      const place = await geocodePlace(cg?.address || trip.destination)
+      if (place) setDiscoverCenter({ ...place, label: place.label })
+      else toast('Couldn’t place the destination on the map.')
+    } catch (err) {
+      toast(err.message, { tone: 'danger' })
+    }
+    setDiscovering(false)
   }
 
   return (
@@ -167,19 +191,24 @@ export default function TripDetail({ tripId }) {
           <Section
             title="Things to Do"
             action={
-              places.length > 0 && (
-                <Button
-                  variant="ghost"
-                  small
-                  icon="plus"
-                  onClick={() => {
-                    setEditingPlace(null)
-                    setPlaceOpen(true)
-                  }}
-                >
-                  Add
+              <div style={{ display: 'flex', gap: 2 }}>
+                <Button variant="ghost" small icon="sparkle" onClick={openDiscover} disabled={discovering}>
+                  {discovering ? 'Finding…' : 'Discover'}
                 </Button>
-              )
+                {places.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    small
+                    icon="plus"
+                    onClick={() => {
+                      setEditingPlace(null)
+                      setPlaceOpen(true)
+                    }}
+                  >
+                    Add
+                  </Button>
+                )}
+              </div>
             }
           >
             <PlacesList
@@ -189,6 +218,7 @@ export default function TripDetail({ tripId }) {
                 setEditingPlace(null)
                 setPlaceOpen(true)
               }}
+              onDiscover={openDiscover}
               onEdit={(p) => {
                 setEditingPlace(p)
                 setPlaceOpen(true)
@@ -281,6 +311,13 @@ export default function TripDetail({ tripId }) {
         place={editingPlace}
         tripId={trip.id}
         defaultVisited={status !== 'planned'}
+      />
+
+      <DiscoverSheet
+        open={!!discoverCenter}
+        onClose={() => setDiscoverCenter(null)}
+        center={discoverCenter}
+        tripId={trip.id}
       />
 
       <ConfirmSheet
@@ -534,7 +571,7 @@ function ChecklistSummary({ trip, active }) {
   )
 }
 
-function PlacesList({ places, status, onAdd, onEdit }) {
+function PlacesList({ places, status, onAdd, onDiscover, onEdit }) {
   const { actions } = useApp()
   if (!places.length) {
     return (
@@ -544,7 +581,10 @@ function PlacesList({ places, status, onAdd, onEdit }) {
         title="Nothing saved yet"
         text="Collect restaurants, trails, and stops — anything worth remembering."
       >
-        <Button variant="soft" small icon="plus" onClick={onAdd}>
+        <Button variant="soft" small icon="sparkle" onClick={onDiscover}>
+          Discover Nearby
+        </Button>
+        <Button variant="ghost" small icon="plus" onClick={onAdd}>
           Add a Place
         </Button>
       </EmptyState>
