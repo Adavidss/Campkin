@@ -396,33 +396,39 @@ export default function Icon({ name, size = 20, filled = false, strokeWidth = 1.
 
 // The Campkin mark: a tent under a moon with the road ahead leading to it.
 export function Logo({ size = 28, className }) {
+  const maskId = React.useId()
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" fill="none" className={className} aria-hidden="true">
+      <defs>
+        <mask id={maskId}>
+          <rect width="48" height="48" fill="black" />
+          <circle cx="31.8" cy="12.2" r="5" fill="white" />
+          <circle cx="34.7" cy="9.5" r="4.7" fill="black" />
+        </mask>
+      </defs>
       <circle cx="24" cy="24" r="22" fill="var(--logo-bg, #33544A)" />
-      <path d="M33.5 13.2a6.2 6.2 0 0 1-6.9-7 7 7 0 1 0 6.9 7z" fill="var(--logo-moon, #E8DCBF)" />
+      <rect width="48" height="48" fill="var(--logo-moon, #E8DCBF)" mask={`url(#${maskId})`} />
       <path
-        d="M25.5 17.5 15 35h21z"
+        d="M13.5 34.5 23 17.2l9.5 17.3"
         stroke="var(--logo-line, #F6F1E5)"
         strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
       />
       <path
-        d="M25.5 24.5 19.6 35h11.8z"
+        d="M19 34.5 23 27.2l4 7.3"
         stroke="var(--logo-line, #F6F1E5)"
         strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
-        fill="none"
       />
-      <path
-        d="M8 40c6-3.4 10.4-1 16-2.4 5-1.2 8.4-3.2 16-2.6"
-        stroke="var(--logo-line, #F6F1E5)"
-        strokeWidth="2.4"
-        strokeLinecap="round"
-        strokeDasharray="0.2 5.4"
-      />
+      <g fill="var(--logo-line, #F6F1E5)">
+        <circle cx="13" cy="40.3" r="1.3" />
+        <circle cx="18" cy="39.5" r="1.3" />
+        <circle cx="23" cy="40.1" r="1.3" />
+        <circle cx="28" cy="40.4" r="1.3" />
+        <circle cx="33" cy="39.7" r="1.3" />
+      </g>
     </svg>
   )
 }

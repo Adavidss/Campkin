@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Campkin</title>
+    <script>
+      // Campkin uses hash routing, so any deep server path just goes home.
+      var base = location.pathname.split('/').slice(0, 2).join('/') + '/'
+      location.replace(base)
+    </script>
+  </head>
+  <body>
+    <p>Heading back to <a href="/Campkin/">Campkin</a>…</p>
+  </body>
+</html>

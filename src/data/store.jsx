@@ -79,8 +79,11 @@ export function useApp() {
 function makeActions(stateRef, setState) {
   const get = () => stateRef.current
 
+  // The ref is updated synchronously so that several actions in the same tick
+  // (e.g. rapid checklist taps) never read stale state while React batches.
   function patchState(patch) {
-    setState((s) => ({ ...s, ...patch }))
+    stateRef.current = { ...stateRef.current, ...patch }
+    setState(stateRef.current)
   }
 
   function replaceIn(list, updated) {

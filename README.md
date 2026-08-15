@@ -1,0 +1,63 @@
+# Campkin
+
+**Your companion for the road ahead.**
+
+Campkin is an RV trip companion, campground keepsake book, and travel passport.
+Open it before a trip to plan the basics, use it on the road for site numbers,
+checklists and directions, and come back afterward to a growing record of the
+parks, campgrounds, states, and places you've been.
+
+Everything lives **on your device** — no accounts, no servers, no tracking.
+
+## Features
+
+- **Trips** — plan with just a name and dates; add campground details,
+  reservations, routes, notes, and photos as you go. Trips in progress switch
+  into a glanceable Trip Mode (site number, check-in, call, directions).
+- **Checklists** — sensible packing defaults plus before-leaving-home and
+  before-leaving-campground walkarounds. Custom items can be kept for every
+  future trip.
+- **Complete Trip** — a one-minute, fully skippable recap (rating, favorite
+  moments, "remember for next time") that turns the trip into a keepsake page.
+- **Campground book** — every campground you stay at gets one page with all
+  your stays, ratings, notes, and photos. Repeat visits accumulate.
+- **Passport** — tasteful travel stamps for parks, campgrounds, towns, and
+  landmarks; all 63 U.S. National Parks built in (visited / want to visit);
+  a states map that fills in as you travel.
+- **Backup & restore** — one file with everything, including photos.
+- **Installable PWA** — works offline at the campground.
+
+## Development
+
+```bash
+npm install
+npm run dev        # http://localhost:3160/Campkin/
+```
+
+The app is Vite + React with no other runtime dependencies. Data is stored in
+IndexedDB (`src/data/db.js`); the schema is versioned for future migrations
+(`src/data/model.js`).
+
+```bash
+npm run build      # production build in dist/ (also generates sw.js)
+npm run preview    # serve the production build locally
+```
+
+## Deployment
+
+Pushes to `main` deploy automatically to GitHub Pages via
+`.github/workflows/deploy.yml` (build → upload → deploy-pages).
+
+One-time repository setup: **Settings → Pages → Source: GitHub Actions**.
+
+The app is built with `base: '/Campkin/'` and uses hash routing, so it works
+correctly at `https://adavidss.github.io/Campkin/` — never assume it is served
+from the domain root.
+
+## Icons
+
+`public/icons/*.png` are generated from the vector mark:
+
+```bash
+python3 scripts/make_icons.py   # requires Pillow
+```

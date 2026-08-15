@@ -292,6 +292,9 @@ input, textarea, select {
     padding-top: 30px;
     padding-bottom: 60px;
   }
+  .home-brand {
+    display: none;
+  }
 }
 
 /* splash */
