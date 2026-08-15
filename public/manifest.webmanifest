@@ -1,0 +1,15 @@
+{
+  "name": "Campkin",
+  "short_name": "Campkin",
+  "description": "Your companion for the road ahead — RV trips, campgrounds, and a travel passport.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#F7F3EA",
+  "theme_color": "#F7F3EA",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
