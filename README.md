@@ -80,7 +80,13 @@ npm run dev        # http://localhost:3160/Campkin/
 The app is Vite + React + Leaflet. Data is stored in IndexedDB
 (`src/data/db.js`); the schema is versioned for future migrations
 (`src/data/model.js`). Maps and search use keyless services: OSM raster tiles,
-Overpass (campgrounds), and Nominatim (geocoding) — no accounts or API keys.
+Overpass (campgrounds, sights, food), Nominatim (geocoding) and Open-Meteo
+(weather) — no accounts or API keys.
+
+Discovery is built for speed on the road: one combined query per place
+(`src/lib/area.js`) feeds every feature, results persist in a local cache
+(`src/lib/netcache.js`, days-long TTLs, works offline), and the built-in
+National Park + state park datasets render instantly before any network call.
 
 ```bash
 npm run build      # production build in dist/ (also generates sw.js)
