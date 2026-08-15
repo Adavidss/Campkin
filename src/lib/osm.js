@@ -91,6 +91,77 @@ function parseElement(el) {
   }
 }
 
+// --- Destinations for Quick Trip: state parks, national forests, big
+// protected areas around a point (national parks come from the built-in
+// dataset). Relations only, so we get whole parks rather than every sign.
+
+const destCache = new Map()
+
+export async function fetchNearbyDestinations(lat, lon, radiusMi, { signal } = {}) {
+  const key = `${lat.toFixed(2)},${lon.toFixed(2)},${radiusMi}`
+  if (destCache.has(key)) return destCache.get(key)
+  const r = Math.round(radiusMi * 1609.34)
+  const query = `[out:json][timeout:25];
+(
+  relation["boundary"="protected_area"]["protect_class"~"^(2|5)$"]["name"](around:${r},${lat},${lon});
+  relation["leisure"="nature_reserve"]["name"~"State Park|State Forest|National Forest|Recreation Area|State Recreation|Wildlife|Seashore|Lakeshore",i](around:${r},${lat},${lon});
+  relation["boundary"="national_park"]["name"](around:${r},${lat},${lon});
+);
+out center tags 120;`
+  let lastErr = null
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const resp = await fetch(endpoint, {
+        method: 'POST',
+        body: 'data=' + encodeURIComponent(query),
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        signal: withTimeout(signal, 22000),
+      })
+      if (!resp.ok) throw new Error(`Overpass ${resp.status}`)
+      const data = await resp.json()
+      const seen = new Set()
+      const out = []
+      for (const el of data.elements || []) {
+        const t = el.tags || {}
+        const c = el.center
+        if (!c || !t.name) continue
+        // Collapse sub-units ("CRNRA - Island Ford Unit", "Foo SP - North Loop")
+        // to their parent so one big park doesn't flood the list.
+        const name = t.name.replace(/\s+[-–—]\s+.*$/, '').trim()
+        const k = name.toLowerCase()
+        if (seen.has(k)) continue
+        // Skip things that aren't camping-trip destinations.
+        if (/historic site|battlefield|memorial|monument|cemetery|historical park|visitor center/i.test(t.name)) continue
+        seen.add(k)
+        out.push({
+          id: `${el.type}/${el.id}`,
+          name,
+          lat: c.lat,
+          lon: c.lon,
+          kind: classifyDestination({ ...t, name }),
+          state: t['addr:state'] || null,
+          website: t.website || '',
+        })
+      }
+      destCache.set(key, out)
+      return out
+    } catch (err) {
+      if (err.name === 'AbortError' && signal?.aborted) throw err
+      lastErr = err
+    }
+  }
+  throw new Error('The map service is busy right now — try again in a moment.', { cause: lastErr })
+}
+
+function classifyDestination(t) {
+  const n = (t.name || '').toLowerCase()
+  if (/national park$/.test(n)) return 'national-park'
+  if (/national forest|national grassland/.test(n)) return 'national-forest'
+  if (/state park|state forest|state recreation/.test(n)) return 'state-park'
+  if (/seashore|lakeshore|beach/.test(n)) return 'beach'
+  return 'recreation'
+}
+
 // --- Nominatim place search ------------------------------------------------
 
 const geoCache = new Map()

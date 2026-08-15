@@ -28,6 +28,14 @@ export default function Trips() {
 
       <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
         <ListRow
+          icon="pin"
+          title="Quick Trip"
+          sub="Tap a place near you — get a whole trip, ready to go"
+          onClick={() => navigate('trips/quick')}
+          right={<Icon name="chevronRight" size={16} />}
+          className="ideas-row"
+        />
+        <ListRow
           icon="sparkle"
           title="Trip Ideas"
           sub="Recommended park runs near you, mapped and ranked"

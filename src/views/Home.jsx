@@ -37,9 +37,9 @@ export default function Home() {
       {hero && <HeroCard trip={hero} kind={heroKind} />}
 
       <div className="quick-actions">
+        <QuickAction icon="pin" label="Quick Trip" to="trips/quick" />
         <QuickAction icon="plus" label="Plan a Trip" to="trips/new" />
-        <QuickAction icon="passport" label="View Passport" to="passport" />
-        <QuickAction icon="tent" label="Campgrounds" to="campgrounds" />
+        <QuickAction icon="passport" label="Passport" to="passport" />
       </div>
 
       <div className="stat-line">

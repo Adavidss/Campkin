@@ -40,6 +40,11 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
 - **Trip weather** — a keyless Open-Meteo forecast for the campground across
   your trip dates (hi/lo, rain chance, RV wind warnings), with an honest
   "forecast opens closer to the trip" beyond the 16-day window.
+- **Quick Trip** — a map of parks, forests and seashores around you (widen the
+  range to see more); tap any pin and Campkin assembles a whole trip on the
+  spot — where to stay (RV parks or tent sites, following the RV toggle),
+  what to see, where to eat, the forecast and the drive — then creates it in
+  one tap with everything attached.
 - **Trip Ideas** — recommended National Park runs from wherever you are,
   mapped and ranked with visible reasons; one tap pre-fills Plan a Trip, which
   has an inbuilt map, weekend date shortcuts, and suggests + attaches a
