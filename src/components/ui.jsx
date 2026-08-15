@@ -178,6 +178,21 @@ export function Stars({ value = 0, onChange, size = 22, label = 'Rating' }) {
   )
 }
 
+export function Toggle({ checked, onChange, label }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      className={cx('toggle', checked && 'is-on')}
+      onClick={() => onChange(!checked)}
+    >
+      <span className="toggle-knob" />
+    </button>
+  )
+}
+
 export function ProgressBar({ value, max, className }) {
   const pct = max > 0 ? Math.round((value / max) * 100) : 0
   return (

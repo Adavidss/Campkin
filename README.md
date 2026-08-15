@@ -24,6 +24,15 @@ Everything lives **on your device** — no accounts, no servers, no tracking.
 - **Passport** — tasteful travel stamps for parks, campgrounds, towns, and
   landmarks; all 63 U.S. National Parks built in (visited / want to visit);
   a states map that fills in as you travel.
+- **RV Mode** (on by default) — set your rig's type, length, and height; new
+  trips get RV checklists, route estimates use RV pace, and campground size
+  limits are checked against your rig.
+- **Find Nearby** — a keyless campground map (OpenStreetMap/Overpass): search
+  any town or use your location, filter to RV-friendly sites, see fit badges
+  for your rig, then get Apple Maps directions or save straight to your book.
+- **Route planning** — type "Atlanta, GA → Big Meadows Campground", tap
+  Estimate, and get road miles + RV-pace drive time with a route overview map.
+  Turn-by-turn always opens in Apple Maps (or Google Maps).
 - **Backup & restore** — one file with everything, including photos.
 - **Installable PWA** — works offline at the campground.
 
@@ -34,9 +43,10 @@ npm install
 npm run dev        # http://localhost:3160/Campkin/
 ```
 
-The app is Vite + React with no other runtime dependencies. Data is stored in
-IndexedDB (`src/data/db.js`); the schema is versioned for future migrations
-(`src/data/model.js`).
+The app is Vite + React + Leaflet. Data is stored in IndexedDB
+(`src/data/db.js`); the schema is versioned for future migrations
+(`src/data/model.js`). Maps and search use keyless services: OSM raster tiles,
+Overpass (campgrounds), and Nominatim (geocoding) — no accounts or API keys.
 
 ```bash
 npm run build      # production build in dist/ (also generates sw.js)

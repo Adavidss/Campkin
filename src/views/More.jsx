@@ -3,8 +3,9 @@ import { useApp, campgroundVisits } from '../data/store.jsx'
 import { navigate, back, Link } from '../lib/router.jsx'
 import Icon, { Logo } from '../components/Icon.jsx'
 import {
-  Button, Card, Section, Sheet, ConfirmSheet, ListRow, EmptyState, Segmented, useToast,
+  Button, Card, Section, Sheet, ConfirmSheet, ListRow, EmptyState, Segmented, Toggle, Field, useToast,
 } from '../components/ui.jsx'
+import { RV_TYPES } from '../lib/geo.js'
 import Stamp from '../components/Stamp.jsx'
 import TripCard from '../components/TripCard.jsx'
 import { createBackupFile, readBackupFile } from '../lib/backup.js'
@@ -60,6 +61,10 @@ function MoreHome() {
       <div className="page-head">
         <h1 className="page-title">More</h1>
       </div>
+
+      <Section title="Your RV">
+        <RVSection />
+      </Section>
 
       <Section title="Collections">
         <ListRow icon="heart" title="Favorites" sub="Trips, campgrounds, places and parks you loved" href="#/more/favorites" right={<Icon name="chevronRight" size={16} />} />
@@ -224,6 +229,66 @@ function MoreHome() {
         }}
       />
     </>
+  )
+}
+
+/* ---- RV profile -------------------------------------------------------------- */
+
+function RVSection() {
+  const { state, actions } = useApp()
+  const rv = state.settings.rv || {}
+  const on = state.settings.rvMode
+  const setRV = (patch) => actions.updateSettings({ rv: { ...rv, ...patch } })
+
+  return (
+    <Card>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div>
+          <div style={{ fontWeight: 650 }}>RV Mode</div>
+          <div style={{ fontSize: 13, color: 'var(--ink-faint)', marginTop: 1 }}>
+            RV checklists, RV-pace drive times, and rig-size checks on the map
+          </div>
+        </div>
+        <Toggle checked={on} onChange={(v) => actions.updateSettings({ rvMode: v })} label="RV Mode" />
+      </div>
+
+      {on && (
+        <div className="fade-up" style={{ marginTop: 16 }}>
+          <Field label="Type">
+            <select className="select" value={rv.type || 'travel-trailer'} onChange={(e) => setRV({ type: e.target.value })}>
+              {RV_TYPES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="form-grid-2">
+            <Field label="Length (ft)" hint="Total, bumper to hitch">
+              <input
+                className="input"
+                inputMode="decimal"
+                value={rv.lengthFt ?? ''}
+                onChange={(e) => setRV({ lengthFt: e.target.value.replace(/[^\d.]/g, '') })}
+                placeholder="32"
+              />
+            </Field>
+            <Field label="Height (ft)" hint="For low-clearance awareness">
+              <input
+                className="input"
+                inputMode="decimal"
+                value={rv.heightFt ?? ''}
+                onChange={(e) => setRV({ heightFt: e.target.value.replace(/[^\d.]/g, '') })}
+                placeholder="11.5"
+              />
+            </Field>
+          </div>
+          <p className="field-hint" style={{ marginTop: 2 }}>
+            Your rig’s length is checked against campground size limits on the Find Nearby map.
+          </p>
+        </div>
+      )}
+    </Card>
   )
 }
 

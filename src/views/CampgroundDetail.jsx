@@ -7,10 +7,13 @@ import {
   EmptyState, useToast,
 } from '../components/ui.jsx'
 import PhotoStrip from '../components/PhotoStrip.jsx'
+import MapView from '../components/MapView.jsx'
 import { fmtRange } from '../lib/dates.js'
 import { appleMapsDirections, googleMapsDirections, telHref, normalizeUrl } from '../lib/maps.js'
 import { useAutosaveText } from '../lib/hooks.js'
 import { HOOKUP_TYPES } from '../data/model.js'
+import { geocodePlace } from '../lib/osm.js'
+import { setExploreCenter } from './Campgrounds.jsx'
 
 export default function CampgroundDetail({ campgroundId }) {
   const { state, actions } = useApp()
@@ -32,7 +35,7 @@ export default function CampgroundDetail({ campgroundId }) {
   const remembers = visits
     .filter((t) => t.rememberNextTime)
     .map((t) => ({ tripId: t.id, text: t.rememberNextTime, when: fmtRange(t.startDate, t.endDate) }))
-  const dest = cg.address || `${cg.name}${cg.location ? ', ' + cg.location : ''}`
+  const dest = cg.lat != null ? `${cg.lat},${cg.lon}` : cg.address || `${cg.name}${cg.location ? ', ' + cg.location : ''}`
 
   return (
     <>
@@ -53,6 +56,19 @@ export default function CampgroundDetail({ campgroundId }) {
           {cg.sample && <span className="tag-sample">Sample</span>}
         </div>
       </div>
+
+      {cg.lat != null && (
+        <Card style={{ marginTop: 12, padding: 0, overflow: 'hidden' }}>
+          <MapView
+            center={{ lat: cg.lat, lon: cg.lon }}
+            zoom={12}
+            markers={[{ id: cg.id, lat: cg.lat, lon: cg.lon, kind: 'campground' }]}
+            interactive={false}
+            height={170}
+            className="map-view map-inline"
+          />
+        </Card>
+      )}
 
       <Card style={{ marginTop: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -90,6 +106,19 @@ export default function CampgroundDetail({ campgroundId }) {
           {cg.website && (
             <Button variant="soft" small icon="globe" href={normalizeUrl(cg.website)} target="_blank" rel="noopener">
               Website
+            </Button>
+          )}
+          {cg.lat != null && (
+            <Button
+              variant="soft"
+              small
+              icon="pin"
+              onClick={() => {
+                setExploreCenter({ lat: cg.lat, lon: cg.lon, label: cg.name })
+                navigate('campgrounds/find')
+              }}
+            >
+              Nearby
             </Button>
           )}
           <Button variant="ghost" small icon="pencil" onClick={() => setEditOpen(true)}>
@@ -193,7 +222,9 @@ function NotesCard({ cg }) {
 
 function EditSheet({ cg, open, onClose }) {
   const { actions } = useApp()
+  const toast = useToast()
   const [form, setForm] = useState({})
+  const [locating, setLocating] = useState(false)
   React.useEffect(() => {
     if (open)
       setForm({
@@ -206,6 +237,23 @@ function EditSheet({ cg, open, onClose }) {
       })
   }, [open, cg])
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  async function locate() {
+    const q = (form.address || '').trim() || `${(form.name || '').trim()}, ${(form.location || '').trim()}`
+    setLocating(true)
+    try {
+      const place = await geocodePlace(q)
+      if (!place) toast('Couldn’t place that address — try adding town and state.')
+      else {
+        actions.updateCampground(cg.id, { lat: place.lat, lon: place.lon })
+        toast('Pinned on the map', { icon: 'pin' })
+      }
+    } catch (err) {
+      toast(err.message, { tone: 'danger' })
+    }
+    setLocating(false)
+  }
+
   return (
     <Sheet
       open={open}
@@ -233,6 +281,9 @@ function EditSheet({ cg, open, onClose }) {
       <Field label="Address">
         <input className="input" value={form.address || ''} onChange={set('address')} />
       </Field>
+      <Button variant="soft" small icon="pin" onClick={locate} disabled={locating} style={{ marginBottom: 14 }}>
+        {locating ? 'Finding…' : cg.lat != null ? 'Re-pin from address' : 'Pin on the map from address'}
+      </Button>
       <Field label="Hookups">
         <Chips
           options={HOOKUP_TYPES.map((h) => ({ id: h, label: h }))}

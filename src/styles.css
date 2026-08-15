@@ -1787,6 +1787,182 @@ input[type='date'].input {
 }
 
 /* --------------------------------------------------------------------------
+   Maps (Leaflet)
+   -------------------------------------------------------------------------- */
+
+.map-view {
+  position: relative;
+  z-index: 0; /* trap Leaflet's internal z-indexes below nav & sheets */
+  width: 100%;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.map-inline {
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid var(--line);
+}
+
+.map-wrap {
+  position: relative;
+}
+
+.map-search-btn {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  box-shadow: var(--shadow-2);
+}
+
+.leaflet-container {
+  font-family: var(--font-ui);
+  background: var(--surface-2);
+}
+
+.leaflet-control-attribution {
+  font-size: 9.5px !important;
+  background: color-mix(in srgb, var(--surface) 80%, transparent) !important;
+  color: var(--ink-faint) !important;
+}
+
+.leaflet-control-attribution a {
+  color: var(--ink-soft) !important;
+}
+
+:root[data-theme='dark'] .leaflet-tile {
+  filter: brightness(0.62) contrast(1.02) saturate(0.55);
+}
+
+:root[data-theme='dark'] .leaflet-control-zoom a {
+  background: var(--surface);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+.ck-marker {
+  filter: drop-shadow(0 2px 3px rgba(20, 26, 22, 0.35));
+  transition: transform 0.15s ease;
+}
+
+.ck-marker.is-selected {
+  transform: scale(1.12);
+}
+
+.ck-user-dot .ck-user-inner {
+  display: block;
+  width: 14px;
+  height: 14px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--blue);
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--blue) 45%, transparent);
+  animation: user-pulse 2.4s ease-out infinite;
+}
+
+@keyframes user-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--blue) 45%, transparent); }
+  70% { box-shadow: 0 0 0 12px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+.found-row.is-selected {
+  border-color: var(--pine);
+  box-shadow: 0 0 0 1px var(--pine);
+}
+
+.fit-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.fit-badge.is-fits {
+  background: var(--pine-soft);
+  color: var(--pine-deep);
+}
+
+.fit-badge.is-tight {
+  background: color-mix(in srgb, var(--amber) 16%, var(--surface));
+  color: var(--amber);
+}
+
+.fit-badge.is-no {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.rv-fit-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 11px 13px;
+  border-radius: var(--r-md);
+  background: var(--pine-soft);
+  color: var(--pine-deep);
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.rv-fit-note svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.rv-fit-note.is-tight {
+  background: color-mix(in srgb, var(--amber) 15%, var(--surface));
+  color: var(--amber);
+}
+
+.rv-fit-note.is-no {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* toggle switch */
+.toggle {
+  position: relative;
+  width: 50px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--line-strong);
+  flex-shrink: 0;
+  transition: background 0.18s ease;
+}
+
+.toggle.is-on {
+  background: var(--pine);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fffdf7;
+  box-shadow: 0 1px 3px rgba(20, 26, 22, 0.3);
+  transition: transform 0.18s ease;
+}
+
+.toggle.is-on .toggle-knob {
+  transform: translateX(20px);
+}
+
+/* --------------------------------------------------------------------------
    Photos
    -------------------------------------------------------------------------- */
 

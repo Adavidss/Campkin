@@ -50,10 +50,22 @@ const DEFAULTS = {
   ],
 }
 
-export function defaultChecklist(savedCustomItems = []) {
+// RV-specific default items stay out of tent-trip checklists (RV Mode off).
+const RV_ONLY = new Set([
+  ...DEFAULTS.RV,
+  'Disconnect hookups',
+  'Retract awning',
+  'Lower antenna',
+  'Walk around RV',
+  'Hitch & lights check',
+])
+
+export function defaultChecklist(savedCustomItems = [], { rv = true } = {}) {
   const items = []
   for (const cat of CHECKLIST_CATEGORIES) {
+    if (!rv && cat === 'RV') continue
     for (const label of DEFAULTS[cat] || []) {
+      if (!rv && RV_ONLY.has(label)) continue
       items.push({ id: uid(), cat, label, done: false, custom: false })
     }
     for (const saved of savedCustomItems.filter((s) => s.cat === cat)) {

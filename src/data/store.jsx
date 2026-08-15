@@ -9,7 +9,7 @@ import { defaultChecklist } from './checklists.js'
 import { PARK_BY_ID, findParkByName } from './parks.js'
 import { uid, normalizeName } from '../lib/util.js'
 import { todayISO } from '../lib/dates.js'
-import { parseStateFrom, STATE_BY_AB } from '../lib/states.js'
+import { parseStateFrom, stateName, STATE_BY_AB } from '../lib/states.js'
 import { compressImage } from '../lib/images.js'
 import { buildSampleData, SAMPLE_PREFIX } from './sample.js'
 
@@ -174,7 +174,7 @@ function makeActions(stateRef, setState) {
         startDate,
         endDate,
         notes: notes || '',
-        checklist: defaultChecklist(s.settings.savedChecklistItems),
+        checklist: defaultChecklist(s.settings.savedChecklistItems, { rv: s.settings.rvMode }),
       })
       patchState({ trips: [...s.trips, trip] })
       persistPut('trips', trip)
@@ -333,6 +333,31 @@ function makeActions(stateRef, setState) {
 
     addCampground(fields) {
       return upsertCampgroundByName(fields)
+    },
+
+    // Save a campground found on the Find Nearby map into the book.
+    saveCampgroundFromMap(found) {
+      const s = get()
+      const existing = s.campgrounds.find(
+        (c) => (found.osmId && c.osmId === found.osmId) || normalizeName(c.name) === normalizeName(found.name)
+      )
+      const fields = {
+        name: found.name,
+        location: found.state ? stateName(found.state) : '',
+        phone: found.phone || '',
+        website: found.website || '',
+        lat: found.lat,
+        lon: found.lon,
+        osmId: found.osmId || null,
+        rvMaxLengthFt: found.maxLengthFt ?? null,
+      }
+      if (existing) {
+        return api.updateCampground(existing.id, stripEmpty(fields))
+      }
+      const cg = newCampground(fields)
+      patchState({ campgrounds: [...s.campgrounds, cg] })
+      persistPut('campgrounds', cg)
+      return cg
     },
 
     updateCampground(id, patch) {

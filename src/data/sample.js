@@ -26,6 +26,8 @@ export function buildSampleData() {
     phone: '(540) 999-3500',
     website: 'https://www.nps.gov/shen',
     hookups: 'Dry Camping',
+    lat: 38.5215,
+    lon: -78.4383,
     rating: 5,
     favorite: true,
     sample: true,
@@ -69,6 +71,8 @@ export function buildSampleData() {
     address: '12001 NC-12, Nags Head, NC 27959',
     phone: '(252) 473-2111',
     hookups: 'Electric + Water',
+    lat: 35.7962,
+    lon: -75.5462,
     rating: 4,
     returnSomeday: true,
     sample: true,
@@ -103,6 +107,8 @@ export function buildSampleData() {
     address: '1219 State Hwy 3, Bar Harbor, ME 04609',
     phone: '(207) 288-4782',
     hookups: 'Full Hookups',
+    lat: 44.4284,
+    lon: -68.3542,
     sample: true,
   })
 

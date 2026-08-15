@@ -39,7 +39,7 @@ function Router({ parts }) {
     if (p2 === 'complete') return <TripComplete tripId={p1} />
     return <TripDetail tripId={p1} />
   }
-  if (p0 === 'campgrounds') return <Campgrounds />
+  if (p0 === 'campgrounds') return <Campgrounds tab={p1 === 'find' ? 'find' : 'book'} />
   if (p0 === 'campground' && p1) return <CampgroundDetail campgroundId={p1} />
   if (p0 === 'passport') return <Passport tab={p1 || 'stamps'} />
   if (p0 === 'more') return <More sub={p1} />

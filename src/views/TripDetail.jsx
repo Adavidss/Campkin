@@ -14,6 +14,10 @@ import { appleMapsDirections, googleMapsDirections, appleMapsSearch, telHref, no
 import { useAutosaveText } from '../lib/hooks.js'
 import { HOOKUP_TYPES, WOULD_RETURN, CATEGORY_BY_ID } from '../data/model.js'
 import { plural } from '../lib/util.js'
+import { geocodePlace } from '../lib/osm.js'
+import { roadMilesEstimate, driveTimeEstimate } from '../lib/geo.js'
+import { setExploreCenter } from './Campgrounds.jsx'
+import MapView from '../components/MapView.jsx'
 
 export default function TripDetail({ tripId }) {
   const { state, actions } = useApp()
@@ -324,6 +328,19 @@ function NowCard({ trip, cg, onAddNote, onAddPlace, onAddPhoto, onRemember }) {
               Call Campground
             </Button>
           )}
+          {cg?.lat != null && (
+            <Button
+              variant="soft"
+              small
+              icon="pin"
+              onClick={() => {
+                setExploreCenter({ lat: cg.lat, lon: cg.lon, label: cg.name })
+                navigate('campgrounds/find')
+              }}
+            >
+              Nearby
+            </Button>
+          )}
           {lastDay && (
             <Button variant="soft" small icon="list" onClick={() => navigate(`trip/${trip.id}/checklist/Before Leaving Campground`)}>
               Departure checklist
@@ -354,9 +371,19 @@ function NowCard({ trip, cg, onAddNote, onAddPlace, onAddPhoto, onRemember }) {
 }
 
 function CampgroundInfo({ trip, cg, onEdit }) {
-  const dest = cg.address || `${cg.name}${cg.location ? ', ' + cg.location : ''}`
+  const dest = cg.lat != null ? `${cg.lat},${cg.lon}` : cg.address || `${cg.name}${cg.location ? ', ' + cg.location : ''}`
   return (
     <Card style={{ padding: 0, overflow: 'hidden' }}>
+      {cg.lat != null && (
+        <MapView
+          center={{ lat: cg.lat, lon: cg.lon }}
+          zoom={12}
+          markers={[{ id: cg.id, lat: cg.lat, lon: cg.lon, kind: 'campground' }]}
+          interactive={false}
+          height={150}
+          className="map-view map-inline"
+        />
+      )}
       <div style={{ padding: '14px 16px 10px', display: 'flex', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <Link to={`campground/${cg.id}`} style={{ fontWeight: 680, fontSize: 17, color: 'var(--ink)' }}>
@@ -416,33 +443,51 @@ function Cell({ label, value, wide }) {
 function RouteInfo({ trip, cg, onEdit }) {
   const r = trip.route
   const dest = r.to || (cg ? cg.address || cg.name : trip.destination)
+  const hasCoords = r.fromCoord && r.toCoord
   return (
-    <Card style={{ padding: '14px 16px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 650 }}>
-            {r.from || 'Home'} <Icon name="chevronRight" size={12} style={{ color: 'var(--ink-faint)' }} />{' '}
-            {r.to || trip.destination || 'Destination'}
-          </div>
-          <div style={{ fontSize: 13.5, color: 'var(--ink-faint)', marginTop: 2 }}>
-            {[r.miles && `${r.miles} miles`, r.driveTime].filter(Boolean).join(' · ') || 'Route details'}
-          </div>
-        </div>
-        <Button variant="ghost" small icon="pencil" onClick={onEdit} aria-label="Edit route">
-          Edit
-        </Button>
-      </div>
-      {r.notes && <p style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 8 }}>{r.notes}</p>}
-      {dest && (
-        <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-          <Button variant="soft" small icon="map" href={appleMapsDirections(dest, r.from)} target="_blank" rel="noopener">
-            Apple Maps
-          </Button>
-          <Button variant="soft" small icon="map" href={googleMapsDirections(dest, r.from)} target="_blank" rel="noopener">
-            Google Maps
-          </Button>
-        </div>
+    <Card style={{ padding: hasCoords ? 0 : '14px 16px', overflow: 'hidden' }}>
+      {hasCoords && (
+        <MapView
+          markers={[
+            { id: 'from', lat: r.fromCoord.lat, lon: r.fromCoord.lon, kind: 'from' },
+            { id: 'to', lat: r.toCoord.lat, lon: r.toCoord.lon, kind: 'to' },
+          ]}
+          line={[r.fromCoord, r.toCoord]}
+          fit="markers"
+          interactive={false}
+          height={170}
+          className="map-view map-inline"
+        />
       )}
+      <div style={hasCoords ? { padding: '12px 16px 14px' } : undefined}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 650 }}>
+              {r.from || 'Home'} <Icon name="chevronRight" size={12} style={{ color: 'var(--ink-faint)' }} />{' '}
+              {r.to || trip.destination || 'Destination'}
+            </div>
+            <div style={{ fontSize: 13.5, color: 'var(--ink-faint)', marginTop: 2 }}>
+              {[r.miles && `${r.miles} miles`, r.driveTime && `about ${r.driveTime}`]
+                .filter(Boolean)
+                .join(' · ') || 'Route details'}
+            </div>
+          </div>
+          <Button variant="ghost" small icon="pencil" onClick={onEdit} aria-label="Edit route">
+            Edit
+          </Button>
+        </div>
+        {r.notes && <p style={{ fontSize: 14, color: 'var(--ink-soft)', marginTop: 8 }}>{r.notes}</p>}
+        {dest && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <Button variant="soft" small icon="map" href={appleMapsDirections(dest, r.from)} target="_blank" rel="noopener">
+              Apple Maps
+            </Button>
+            <Button variant="soft" small icon="map" href={googleMapsDirections(dest, r.from)} target="_blank" rel="noopener">
+              Google Maps
+            </Button>
+          </div>
+        )}
+      </div>
     </Card>
   )
 }
@@ -840,8 +885,11 @@ function CampgroundSheet({ trip, cg, open, onClose }) {
 }
 
 function RouteSheet({ trip, cg, open, onClose }) {
-  const { actions } = useApp()
+  const { state, actions } = useApp()
+  const toast = useToast()
   const [form, setForm] = useState({})
+  const [estimating, setEstimating] = useState(false)
+  const rvMode = state.settings.rvMode
   React.useEffect(() => {
     if (open)
       setForm(
@@ -855,6 +903,38 @@ function RouteSheet({ trip, cg, open, onClose }) {
       )
   }, [open, trip, cg])
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  async function estimate() {
+    const fromQ = (form.from || '').trim()
+    const toQ = (form.to || '').trim()
+    if (!fromQ || !toQ) {
+      toast('Fill in both ends of the route first — e.g. “Atlanta, GA”.')
+      return
+    }
+    setEstimating(true)
+    try {
+      const a = await geocodePlace(fromQ)
+      const b = a && (await geocodePlace(toQ))
+      if (!a || !b) {
+        toast(`Couldn’t place “${!a ? fromQ : toQ}” — try a town + state.`)
+      } else {
+        const miles = roadMilesEstimate(a, b)
+        const time = driveTimeEstimate(miles, { rv: rvMode })
+        setForm((f) => ({
+          ...f,
+          miles: String(miles),
+          driveTime: time,
+          fromCoord: { lat: a.lat, lon: a.lon, label: a.label },
+          toCoord: { lat: b.lat, lon: b.lon, label: b.label },
+        }))
+        toast(`About ${miles} miles — ${time}${rvMode ? ' at RV pace' : ''}`, { icon: 'route', duration: 4200 })
+      }
+    } catch (err) {
+      toast(err.message, { tone: 'danger' })
+    }
+    setEstimating(false)
+  }
+
   return (
     <Sheet
       open={open}
@@ -883,11 +963,21 @@ function RouteSheet({ trip, cg, open, onClose }) {
       }
     >
       <Field label="Starting from">
-        <input className="input" value={form.from || ''} onChange={set('from')} placeholder="Home" data-autofocus />
+        <input className="input" value={form.from || ''} onChange={set('from')} placeholder="Atlanta, GA" data-autofocus />
       </Field>
       <Field label="Destination address">
-        <input className="input" value={form.to || ''} onChange={set('to')} />
+        <input className="input" value={form.to || ''} onChange={set('to')} placeholder="Big Meadows Campground, VA" />
       </Field>
+      <Button
+        variant="soft"
+        small
+        icon="route"
+        onClick={estimate}
+        disabled={estimating}
+        style={{ marginBottom: 14 }}
+      >
+        {estimating ? 'Estimating…' : rvMode ? 'Estimate distance & RV drive time' : 'Estimate distance & drive time'}
+      </Button>
       <div className="form-grid-2">
         <Field label="Mileage">
           <input className="input" inputMode="numeric" value={form.miles || ''} onChange={set('miles')} placeholder="96" />
@@ -897,8 +987,14 @@ function RouteSheet({ trip, cg, open, onClose }) {
         </Field>
       </div>
       <Field label="Notes">
-        <textarea className="textarea" rows={2} value={form.notes || ''} onChange={set('notes')} placeholder="Fuel stops, low bridges, the scenic way in…" />
+        <textarea className="textarea" rows={2} value={form.notes || ''} onChange={set('notes')} placeholder="Fuel stops, low clearances, the scenic way in…" />
       </Field>
+      {rvMode && (
+        <p className="field-hint">
+          Estimates assume RV pace (fuel and rest stops included). Real directions open in Apple or
+          Google Maps.
+        </p>
+      )}
     </Sheet>
   )
 }

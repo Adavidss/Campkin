@@ -75,6 +75,10 @@ export function newCampground(fields) {
     website: '',
     phone: '',
     hookups: '',
+    lat: null,
+    lon: null,
+    osmId: null, // set when saved from the Find Nearby map
+    rvMaxLengthFt: null,
     rating: 0,
     favorite: false,
     returnSomeday: false,
@@ -127,6 +131,8 @@ export function defaultSettings() {
     statesAdded: [], // manual corrections
     statesRemoved: [],
     theme: 'auto',
+    rvMode: true, // Campkin is RV-first; turn off for tent trips
+    rv: { type: 'travel-trailer', lengthFt: '', heightFt: '' },
   }
 }
 
