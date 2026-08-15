@@ -11,11 +11,14 @@ function reason(text, tone = 'good') {
 }
 
 // OSM sometimes has individual pitches mapped as their own "campground"
-// ("Site 19", "Pitch 4"). Fine on the map, but never a recommendation.
-const PITCH_NAME = /^(site|pitch|spot|space|lot)\s*#?\d+[a-z]?$/i
+// ("Site 19", "Designated Campsite #6"). Fine on the map, but never a
+// recommendation — and neither is an unnamed spot nobody can look up or call.
+const PITCH_NAME = /(?:^|\s)(?:camp)?(?:site|pitch|spot|space|lot)\s*#?\d+[a-z]?$/i
+const GENERIC_NAME = /^(campground|rv park)$/i
 
 export function scoreCampground(r, { rvLen = null, rvMode = true } = {}) {
-  if (PITCH_NAME.test((r.name || '').trim())) return null
+  const name = (r.name || '').trim()
+  if (PITCH_NAME.test(name) || GENERIC_NAME.test(name)) return null
 
   let score = 0
   const reasons = []
