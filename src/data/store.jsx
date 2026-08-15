@@ -63,9 +63,23 @@ export function AppProvider({ children }) {
         const parks = {}
         for (const row of parkRows) parks[row.id] = normalizeParkRecord(row)
         if (cancelled) return
+        // Sample records written by an older version may lack fields newer
+        // features rely on (map coordinates). Quietly refresh them from the
+        // current sample set — never touches the user's own records.
+        let cgs = campgrounds.map(normalizeCampground)
+        const staleSample = cgs.filter((c) => c.sample && c.lat == null)
+        if (staleSample.length) {
+          const fresh = buildSampleData().campgrounds
+          cgs = cgs.map((c) => {
+            if (!c.sample || c.lat != null) return c
+            const f = fresh.find((x) => x.id === c.id)
+            return f ? { ...c, lat: f.lat, lon: f.lon } : c
+          })
+          dbBulkPut('campgrounds', cgs.filter((c) => c.sample)).catch(reportDbError)
+        }
         setState({
           trips: trips.map(normalizeTrip),
-          campgrounds: campgrounds.map(normalizeCampground),
+          campgrounds: cgs,
           places: places.map(normalizePlace),
           parks,
           photos: photoRows.map(({ blob, ...meta }) => meta),
